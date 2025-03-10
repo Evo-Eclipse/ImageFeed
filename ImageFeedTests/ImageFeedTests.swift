@@ -1,10 +1,3 @@
-//
-//  ImageFeedTests.swift
-//  ImageFeedTests
-//
-//  Created by Pavel Komarov on 17.02.2025.
-//
-
 import XCTest
 @testable import ImageFeed
 
