@@ -1,10 +1,3 @@
-//
-//  ViewController.swift
-//  ImageFeed
-//
-//  Created by Pavel Komarov on 17.02.2025.
-//
-
 import UIKit
 
 final class ImagesListViewController: UIViewController {
@@ -53,6 +46,8 @@ final class ImagesListViewController: UIViewController {
     
 }
 
+// MARK: - UITableViewDelegate
+
 extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
@@ -73,6 +68,8 @@ extension ImagesListViewController: UITableViewDelegate {
         return cellHeight
     }
 }
+
+// MARK: - UITableViewDataSource
 
 extension ImagesListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
