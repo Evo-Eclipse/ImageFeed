@@ -213,9 +213,29 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="8Gt-9I-Hag">
-                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
-                            </imageView>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ZaV-kD-BYb">
+                                <rect key="frame" x="0.0" y="0.0" width="433" height="892"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8Gt-9I-Hag">
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                    </imageView>
+                                </subviews>
+                                <viewLayoutGuide key="contentLayoutGuide" id="tv6-z6-7Hm"/>
+                                <viewLayoutGuide key="frameLayoutGuide" id="MA6-Tn-uDz"/>
+                            </scrollView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="h4U-Ow-1q4">
+                                <rect key="frame" x="171.66666666666666" y="782" width="50" height="50"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="50" id="ieb-SS-ZvQ"/>
+                                    <constraint firstAttribute="width" constant="50" id="wQb-Xb-WHI"/>
+                                </constraints>
+                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                <state key="normal" image="Sharing Button"/>
+                                <connections>
+                                    <action selector="didTapShareButton:" destination="9p4-JJ-AbD" eventType="touchUpInside" id="hG3-dL-ZiD"/>
+                                </connections>
+                            </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="tb9-Um-XUN">
                                 <rect key="frame" x="8" y="8" width="44" height="44"/>
                                 <constraints>
@@ -232,17 +252,20 @@
                         <viewLayoutGuide key="safeArea" id="lxq-rL-z7e"/>
                         <color key="backgroundColor" name="YP Black"/>
                         <constraints>
-                            <constraint firstItem="8Gt-9I-Hag" firstAttribute="top" secondItem="cdj-xz-mGa" secondAttribute="top" id="88k-PG-uCu"/>
                             <constraint firstItem="tb9-Um-XUN" firstAttribute="top" secondItem="lxq-rL-z7e" secondAttribute="top" constant="8" id="ExF-lE-hVx"/>
-                            <constraint firstAttribute="trailing" secondItem="8Gt-9I-Hag" secondAttribute="trailing" id="WwK-wh-Vpp"/>
-                            <constraint firstItem="8Gt-9I-Hag" firstAttribute="leading" secondItem="cdj-xz-mGa" secondAttribute="leading" id="asU-GW-Nzg"/>
-                            <constraint firstAttribute="bottom" secondItem="8Gt-9I-Hag" secondAttribute="bottom" id="ba6-iy-YWq"/>
+                            <constraint firstItem="ZaV-kD-BYb" firstAttribute="leading" secondItem="lxq-rL-z7e" secondAttribute="leading" id="HZy-3K-8Qm"/>
+                            <constraint firstItem="lxq-rL-z7e" firstAttribute="trailing" secondItem="ZaV-kD-BYb" secondAttribute="trailing" id="QFG-Gt-Lsf"/>
+                            <constraint firstItem="ZaV-kD-BYb" firstAttribute="top" secondItem="cdj-xz-mGa" secondAttribute="top" id="k2F-ta-wJL"/>
+                            <constraint firstItem="lxq-rL-z7e" firstAttribute="bottom" secondItem="h4U-Ow-1q4" secondAttribute="bottom" constant="20" id="mwI-jx-Z4G"/>
+                            <constraint firstItem="h4U-Ow-1q4" firstAttribute="centerX" secondItem="lxq-rL-z7e" secondAttribute="centerX" id="ovi-f6-RFi"/>
+                            <constraint firstAttribute="bottom" secondItem="ZaV-kD-BYb" secondAttribute="bottom" id="tS7-iV-CQw"/>
                             <constraint firstItem="tb9-Um-XUN" firstAttribute="leading" secondItem="lxq-rL-z7e" secondAttribute="leading" constant="8" id="ytc-Mi-JLt"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="VuF-bG-zAo"/>
                     <connections>
                         <outlet property="imageView" destination="8Gt-9I-Hag" id="27m-dE-ipy"/>
+                        <outlet property="scrollView" destination="ZaV-kD-BYb" id="oyF-a8-3RY"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HUP-fr-pjz" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -254,6 +277,7 @@
         <image name="Backward Button" width="24" height="24"/>
         <image name="Like Button Active" width="42" height="42"/>
         <image name="Logout Button" width="24" height="24"/>
+        <image name="Sharing Button" width="50" height="50"/>
         <image name="Tab Editorial Active" width="30" height="30"/>
         <image name="Tab Profile Active" width="30" height="30"/>
         <image name="User Icon" width="70" height="70"/>
