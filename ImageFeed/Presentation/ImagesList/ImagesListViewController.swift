@@ -55,8 +55,8 @@ final class ImagesListViewController: UIViewController {
         cell.cellImage.image = image
         cell.dateLabel.text = dateFormatter.string(from: Date())
         
-        guard let likedImage = UIImage(named: "Like Button Active"),
-              let likeImage = UIImage(named: "Like Button Inactive")
+        guard let likedImage = UIImage(named: "button.like.active"),
+              let likeImage = UIImage(named: "button.like.inactive")
         else { return }
         
         cell.likeButton.setImage(indexPath.row % 2 == 0 ? likedImage : likeImage, for: .normal)
