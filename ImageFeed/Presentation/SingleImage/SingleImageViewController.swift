@@ -12,7 +12,7 @@ final class SingleImageViewController: UIViewController {
     var image: UIImage? {
         didSet {
             guard isViewLoaded, let image else { return }
-
+            
             imageView.image = image
             imageView.frame.size = image.size
             updateZoomAndCenterImage(animated: false)
@@ -28,15 +28,23 @@ final class SingleImageViewController: UIViewController {
         let imageSize = image.size
         let hScale = visibleRectSize.width / imageSize.width
         let vScale = visibleRectSize.height / imageSize.height
-        let minScale = min(hScale, vScale)
         
-        let scale = min(scrollView.maximumZoomScale, max(scrollView.minimumZoomScale, minScale))
+        let scale = min(scrollView.maximumZoomScale, max(scrollView.minimumZoomScale, max(hScale, vScale)))
         
         if scrollView.zoomScale != scale {
             scrollView.setZoomScale(scale, animated: animated)
         }
         
-        centerScrollViewContents()
+        let contentSize = scrollView.contentSize
+        let scrollViewSize = scrollView.bounds.size
+        
+        if contentSize.width > scrollViewSize.width {
+            scrollView.contentOffset.x = (contentSize.width - scrollViewSize.width) / 2
+        }
+        
+        if contentSize.height > scrollViewSize.height {
+            scrollView.contentOffset.y = (contentSize.height - scrollViewSize.height) / 2
+        }
     }
     
     private func centerScrollViewContents() {
@@ -81,7 +89,6 @@ final class SingleImageViewController: UIViewController {
         
         updateZoomAndCenterImage(animated: false)
     }
-
     
     // MARK: - IB Actions
     
