@@ -118,6 +118,8 @@ final class WebViewViewController: UIViewController {
     }
 }
 
+// MARK: - WKNavigationDelegate
+
 extension WebViewViewController: WKNavigationDelegate {
     func webView(
         _ webView: WKWebView,

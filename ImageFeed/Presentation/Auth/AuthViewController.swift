@@ -1,6 +1,14 @@
 import UIKit
 
+protocol AuthViewControllerDelegate: AnyObject {
+    func authViewController(_ viewController: AuthViewController, didAuthenticateWithCode code: String)
+}
+
 final class AuthViewController: UIViewController {
+    
+    // MARK: - Public Properties
+    
+    weak var delegate: AuthViewControllerDelegate?
     
     // MARK: - Private Properties
     
@@ -94,31 +102,16 @@ final class AuthViewController: UIViewController {
     }
 }
 
+// MARK: - WebViewViewControllerDelegate
+
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(
         _ viewController: WebViewViewController, didAuthenticateWithCode code: String
     ) {
-        OAuth2Service.shared.fetchOAuthToken(code) { [weak self] result in
-            guard let self else { return }
-            
-            switch result {
-            case .success:
-                self.navigationController?.popViewController(animated: true)
-            case .failure(let error):
-                self.showAlert(with: "Ошибка авторизации", message: error.localizedDescription)
-            }
-        }
+        delegate?.authViewController(self, didAuthenticateWithCode: code)
     }
     
     func webViewViewControllerDidCancel(_ viewController: WebViewViewController) {
         navigationController?.popViewController(animated: true)
-    }
-    
-    private func showAlert(with title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        
-        present(alert, animated: true)
     }
 }
