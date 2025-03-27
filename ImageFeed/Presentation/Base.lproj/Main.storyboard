@@ -9,10 +9,10 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--ImageList-->
+        <!--Images List View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController title="ImageList" id="BYZ-38-t0r" customClass="ImagesListViewController" customModule="ImageFeed" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="BYZ-38-t0r" customClass="ImagesListViewController" customModule="ImageFeed" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -118,10 +118,13 @@
                         <color key="backgroundColor" name="YP Black"/>
                     </view>
                     <navigationItem key="navigationItem" id="c1M-Nr-JC1"/>
+                    <connections>
+                        <segue destination="QTP-9p-coU" kind="show" identifier="ShowWebView" id="6nl-8Q-l52"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="RKE-Le-gId" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1000" y="0.0"/>
+            <point key="canvasLocation" x="-2000" y="0.0"/>
         </scene>
         <!--Tab Bar Controller-->
         <scene sceneID="tXT-lW-55a">
@@ -198,7 +201,7 @@
                                     <constraint firstAttribute="width" constant="44" id="tID-bt-Xh6"/>
                                 </constraints>
                                 <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                <state key="normal" image="button.backward "/>
+                                <state key="normal" image="button.backward.white"/>
                                 <connections>
                                     <action selector="didTapBackButton" destination="9p4-JJ-AbD" eventType="touchUpInside" id="0Gn-Ri-mTe"/>
                                 </connections>
@@ -243,11 +246,27 @@
                 </navigationController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="tmQ-uT-dFy" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-2000" y="0.0"/>
+            <point key="canvasLocation" x="-3000" y="0.0"/>
+        </scene>
+        <!--Web View View Controller-->
+        <scene sceneID="UPj-Wo-H0L">
+            <objects>
+                <viewController id="QTP-9p-coU" customClass="WebViewViewController" customModule="ImageFeed" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Stb-kL-EQX">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <viewLayoutGuide key="safeArea" id="gvh-gt-dNd"/>
+                        <color key="backgroundColor" name="YP White"/>
+                    </view>
+                    <navigationItem key="navigationItem" id="E2M-ks-eXb"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="ec3-jP-n6V" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-1000" y="0.0"/>
         </scene>
     </scenes>
     <resources>
-        <image name="button.backward " width="24" height="24"/>
+        <image name="button.backward.white" width="24" height="24"/>
         <image name="button.like.active" width="42" height="42"/>
         <image name="button.sharing" width="50" height="50"/>
         <image name="tab.editorial.active" width="30" height="30"/>

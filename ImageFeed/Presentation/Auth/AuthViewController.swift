@@ -4,6 +4,8 @@ final class AuthViewController: UIViewController {
     
     // MARK: - Private Properties
     
+    private let showWebViewSegueIdentifier = "ShowWebView"
+    
     private let logoImage: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "logo.auth.screen")
@@ -30,12 +32,26 @@ final class AuthViewController: UIViewController {
         setupViews()
         setupConstraints()
         setupActions()
+        configureBackButton()
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == showWebViewSegueIdentifier {
+            guard let viewController = segue.destination as? WebViewViewController else {
+                assertionFailure("Invalid segue destination")
+                return
+            }
+            
+            viewController.delegate = self
+        } else {
+            super.prepare(for: segue, sender: sender)
+        }
     }
     
     // MARK: - Actions
     
-    @objc private func loginButtonTapped() {
-        print("Login button tapped")
+    @objc private func didTapLoginButton() {
+        performSegue(withIdentifier: showWebViewSegueIdentifier, sender: self)
     }
     
     // MARK: - Private Methods
@@ -53,15 +69,56 @@ final class AuthViewController: UIViewController {
             logoImage.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             logoImage.widthAnchor.constraint(equalToConstant: 60),
             logoImage.heightAnchor.constraint(equalToConstant: 60),
-  
-            loginButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -90),
-            loginButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            loginButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            loginButton.heightAnchor.constraint(equalToConstant: 48)
+            
+            loginButton.bottomAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -90),
+            loginButton.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            loginButton.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            loginButton.heightAnchor.constraint(equalToConstant: 48),
         ])
     }
     
     private func setupActions() {
-        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
+        loginButton.addTarget(self, action: #selector(didTapLoginButton), for: .touchUpInside)
+    }
+    
+    private func configureBackButton() {
+        let image = UIImage(named: "button.backward.black")?.withRenderingMode(.alwaysOriginal)
+        navigationController?.navigationBar.backIndicatorImage = image
+        navigationController?.navigationBar.backIndicatorTransitionMaskImage = image
+        
+        navigationItem.backBarButtonItem = UIBarButtonItem(
+            title: "", style: .plain, target: nil, action: nil)
+    }
+}
+
+extension AuthViewController: WebViewViewControllerDelegate {
+    func webViewViewController(
+        _ viewController: WebViewViewController, didAuthenticateWithCode code: String
+    ) {
+        OAuth2Service.shared.fetchOAuthToken(code) { [weak self] result in
+            guard let self else { return }
+            
+            switch result {
+            case .success:
+                self.navigationController?.popViewController(animated: true)
+            case .failure(let error):
+                self.showAlert(with: "Ошибка авторизации", message: error.localizedDescription)
+            }
+        }
+    }
+    
+    func webViewViewControllerDidCancel(_ viewController: WebViewViewController) {
+        navigationController?.popViewController(animated: true)
+    }
+    
+    private func showAlert(with title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        
+        present(alert, animated: true)
     }
 }
