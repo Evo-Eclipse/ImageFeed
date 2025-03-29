@@ -41,8 +41,7 @@ extension OAuth2Service {
             return
         }
         
-        let task = URLSession.shared.data(for: request) { [weak self] result in
-            guard let self else { return }
+        let task = URLSession.shared.data(for: request) { result in
             
             switch result {
             case .success(let data):

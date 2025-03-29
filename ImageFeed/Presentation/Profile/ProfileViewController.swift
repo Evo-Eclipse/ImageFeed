@@ -4,14 +4,14 @@ final class ProfileViewController: UIViewController {
     
     // MARK: - Private Properties
     
-    private let profileImage: UIImageView = {
+    private lazy var profileImage: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "icon.user")
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
     
-    private let profileName: UILabel = {
+    private lazy var profileName: UILabel = {
         let label = UILabel()
         label.text = "Екатерина Новикова"
         label.font = UIFont.systemFont(ofSize: 23, weight: .bold)
@@ -19,7 +19,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private let profileLogin: UILabel = {
+    private lazy var profileLogin: UILabel = {
         let label = UILabel()
         label.text = "@ekaterina_nov"
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
@@ -27,7 +27,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private let profileDescription: UILabel = {
+    private lazy var profileDescription: UILabel = {
         let label = UILabel()
         label.text = "Hello, world!"
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
@@ -35,7 +35,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private let logoutButton: UIButton = {
+    private lazy var logoutButton: UIButton = {
         let button = UIButton(type: .custom)
         button.setImage(UIImage(named: "button.logout"), for: .normal)
         return button
@@ -48,6 +48,7 @@ final class ProfileViewController: UIViewController {
         
         setupViews()
         setupConstraints()
+        setupActions()
     }
     
     // MARK: - Actions

@@ -14,14 +14,14 @@ final class AuthViewController: UIViewController {
     
     private let showWebViewSegueIdentifier = "ShowWebView"
     
-    private let logoImage: UIImageView = {
+    private lazy var logoImage: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "logo.auth.screen")
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
     
-    private let loginButton: UIButton = {
+    private lazy var loginButton: UIButton = {
         let button = UIButton(type: .custom)
         button.setTitle("Войти", for: .normal)
         button.setTitleColor(.ypBlack, for: .normal)

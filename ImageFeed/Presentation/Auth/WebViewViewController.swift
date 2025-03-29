@@ -1,5 +1,5 @@
 import UIKit
-import WebKit
+@preconcurrency import WebKit
 
 enum WebViewConstants {
     static let unsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
@@ -18,13 +18,13 @@ final class WebViewViewController: UIViewController {
     
     // MARK: - Private Properties
     
-    private let webView: WKWebView = {
+    private lazy var webView: WKWebView = {
         let webView = WKWebView()
         webView.backgroundColor = .ypWhite
         return webView
     }()
     
-    private let progressView: UIProgressView = {
+    private lazy var progressView: UIProgressView = {
         let progressView = UIProgressView()
         progressView.progressTintColor = .ypBlack
         return progressView
