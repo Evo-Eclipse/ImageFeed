@@ -1,0 +1,30 @@
+import Foundation
+
+/*
+HOW TO SET UP CONSTANTS:
+
+1. Rename this file to Constants.swift
+2. Register your application on Unsplash Developer portal (https://unsplash.com/developers)
+3. Create a new application and obtain your API credentials
+4. Replace placeholder values below with your actual Unsplash API credentials
+5. Make sure Constants.swift is added to .gitignore to keep your keys private
+
+Note: Constants.swift contains sensitive information and should never be committed to version control
+*/
+
+enum Constants {
+    // Your Unsplash application Access Key (Client ID)
+    static let accessKey = "YOUR_ACCESS_KEY_HERE"
+    
+    // Your Unsplash application Secret Key
+    static var secretKey = "YOUR_SECRET_KEY_HERE"
+    
+    // Your application's redirect URI
+    static let redirectURI = "YOUR_REDIRECT_URI_HERE"
+    
+    // OAuth scope defining permissions requested from the user
+    static let accessScope = "public+read_user+write_likes"
+    
+    // Base URL for Unsplash API
+    static let defaultBaseURL = URL(string: "https://api.unsplash.com")!
+}
