@@ -6,7 +6,6 @@ final class SplashViewController: UIViewController {
     
     private let showAuthSegueIdentifier = "ShowAuth"
     private let tabBarViewControllerIdentifier = "TabBarViewController"
-    private let oauth2Service = OAuth2Service.shared
     private let oauth2TokenStorage = OAuth2TokenStorage.shared
     
     // MARK: - Overrides Methods
@@ -64,22 +63,6 @@ final class SplashViewController: UIViewController {
 
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ viewController: AuthViewController, didAuthenticateWithCode code: String) {
-        dismiss(animated: true) { [weak self] in
-            guard let self else { return }
-            self.fetchOAuthToken(with: code)
-        }
-    }
-    
-    private func fetchOAuthToken(with code: String) {
-        oauth2Service.fetchOAuthToken(code) { [weak self] result in
-            guard let self else { return }
-            
-            switch result {
-            case .success:
-                self.switchToTabBarViewController()
-            case .failure(let error):
-                print("SplashViewController :: Ошибка получения токена: \(error)")
-            }
-        }
+        switchToTabBarViewController()
     }
 }

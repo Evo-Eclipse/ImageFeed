@@ -1,4 +1,5 @@
 import UIKit
+import ProgressHUD
 
 protocol AuthViewControllerDelegate: AnyObject {
     func authViewController(_ viewController: AuthViewController, didAuthenticateWithCode code: String)
@@ -13,6 +14,7 @@ final class AuthViewController: UIViewController {
     // MARK: - Private Properties
     
     private let showWebViewSegueIdentifier = "ShowWebView"
+    private let oauth2Service = OAuth2Service.shared
     
     private lazy var logoImage: UIImageView = {
         let imageView = UIImageView()
@@ -100,6 +102,12 @@ final class AuthViewController: UIViewController {
         navigationItem.backBarButtonItem = UIBarButtonItem(
             title: "", style: .plain, target: nil, action: nil)
     }
+    
+    private func fetchOAuthToken(with code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        oauth2Service.fetchOAuthToken(code) { result in
+            completion(result)
+        }
+    }
 }
 
 // MARK: - WebViewViewControllerDelegate
@@ -108,7 +116,19 @@ extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(
         _ viewController: WebViewViewController, didAuthenticateWithCode code: String
     ) {
-        delegate?.authViewController(self, didAuthenticateWithCode: code)
+        viewController.dismiss(animated: true)
+        ProgressHUD.animate()
+        fetchOAuthToken(with: code) { [weak self] result in
+            ProgressHUD.dismiss()
+            guard let self else { return }
+            
+            switch result {
+            case .success:
+                self.delegate?.authViewController(self, didAuthenticateWithCode: code)
+            case .failure(let error):
+                print("AuthViewController :: Ошибка получения токена: \(error)")
+            }
+        }
     }
     
     func webViewViewControllerDidCancel(_ viewController: WebViewViewController) {
