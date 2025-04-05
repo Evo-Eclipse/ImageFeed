@@ -1,5 +1,4 @@
 import UIKit
-import ProgressHUD
 
 protocol AuthViewControllerDelegate: AnyObject {
     func authViewController(_ viewController: AuthViewController, didAuthenticateWithCode code: String)
@@ -117,9 +116,9 @@ extension AuthViewController: WebViewViewControllerDelegate {
         _ viewController: WebViewViewController, didAuthenticateWithCode code: String
     ) {
         viewController.dismiss(animated: true)
-        ProgressHUD.animate()
+        UIBlockingProgressHUD.show()
         fetchOAuthToken(with: code) { [weak self] result in
-            ProgressHUD.dismiss()
+            UIBlockingProgressHUD.dismiss()
             guard let self else { return }
             
             switch result {
