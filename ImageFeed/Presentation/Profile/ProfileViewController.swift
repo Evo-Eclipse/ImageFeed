@@ -4,16 +4,21 @@ final class ProfileViewController: UIViewController {
     
     // MARK: - Private Properties
     
+    private let profileStorage = ProfileStorage.shared
+    private let profileImageStorage = ProfileImageStorage.shared
+    private var profileImageServiceObserver: NSObjectProtocol?
+    
     private lazy var profileImage: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "icon.user")
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = .scaleAspectFill
+        imageView.layer.cornerRadius = 35
+        imageView.clipsToBounds = true
         return imageView
     }()
     
     private lazy var profileName: UILabel = {
         let label = UILabel()
-        label.text = "Екатерина Новикова"
         label.font = UIFont.systemFont(ofSize: 23, weight: .bold)
         label.textColor = .ypWhite
         return label
@@ -21,7 +26,6 @@ final class ProfileViewController: UIViewController {
     
     private lazy var profileLogin: UILabel = {
         let label = UILabel()
-        label.text = "@ekaterina_nov"
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         label.textColor = .ypWhiteAlpha50
         return label
@@ -29,7 +33,6 @@ final class ProfileViewController: UIViewController {
     
     private lazy var profileDescription: UILabel = {
         let label = UILabel()
-        label.text = "Hello, world!"
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         label.textColor = .ypWhite
         return label
@@ -49,6 +52,25 @@ final class ProfileViewController: UIViewController {
         setupViews()
         setupConstraints()
         setupActions()
+        
+        profileImageServiceObserver = NotificationCenter.default
+            .addObserver(
+                forName: ProfileImageService.didChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self = self else { return }
+                self.updateAvatar()
+            }
+        
+        updateProfileDetails()
+        updateAvatar()
+    }
+    
+    deinit {
+        if let observer = profileImageServiceObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
     
     // MARK: - Actions
@@ -94,5 +116,35 @@ final class ProfileViewController: UIViewController {
     
     private func setupActions() {
         logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
+    }
+    
+    private func updateProfileDetails() {
+        guard let profile = profileStorage.profile else {
+            return
+        }
+        
+        profileName.text = profile.name
+        profileLogin.text = profile.loginName
+        profileDescription.text = profile.bio
+    }
+    
+    private func updateAvatar() {
+        guard let profileImage = profileImageStorage.profileImage,
+              let url = URL(string: profileImage.medium) else {
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            guard let self = self,
+                  let data = data,
+                  let image = UIImage(data: data),
+                  error == nil else {
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self.profileImage.image = image
+            }
+        }.resume()
     }
 }

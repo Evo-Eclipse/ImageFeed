@@ -1,19 +1,83 @@
 import Foundation
 
-enum AuthServiceError: Error {
-    case invalidRequest
-}
-
 final class OAuth2Service {
     static let shared = OAuth2Service()
+    private init() {}
+    
+    // MARK: - Private Properties
     
     private let urlSession = URLSession.shared
     private var task: URLSessionTask?
     private var lastCode: String?
     
-    private init() {}
+    // MARK: - Structures
     
-    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
+    struct OAuthResult: Decodable {
+        let accessToken: String
+        let tokenType: String
+        let scope: String
+        let createdAt: Int
+        
+        enum CodingKeys: String, CodingKey {
+            case accessToken = "access_token"
+            case tokenType = "token_type"
+            case scope
+            case createdAt = "created_at"
+        }
+    }
+    
+    // MARK: - Public Methods
+    
+    func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        
+        guard lastCode != code else {
+            completion(.failure(NetworkError.invalidRequest))
+            return
+        }
+        
+        task?.cancel()
+        lastCode = code
+        
+        guard let request = makeOAuthRequest(code: code) else {
+            print("[OAuth2Service.fetchOAuthToken] Error: Failed to create token request")
+            completion(.failure(NetworkError.invalidRequest))
+            lastCode = nil
+            return
+        }
+        
+        let task = urlSession.data(for: request) { [weak self] result in
+            guard let self = self else { return }
+            
+            defer {
+                self.task = nil
+                self.lastCode = nil
+            }
+            
+            switch result {
+            case .success(let data):
+                do {
+                    let decoder = JSONDecoder()
+                    let responseBody = try decoder.decode(OAuthResult.self, from: data)
+                    completion(.success(responseBody.accessToken))
+                } catch {
+                    print("[OAuth2Service.fetchOAuthToken] Error: Failed to decode token response - \(error)")
+                    completion(.failure(NetworkError.decodingError(error)))
+                }
+                
+            case .failure(let error):
+                print("[OAuth2Service.fetchOAuthToken] Error: Network error while fetching token - \(error)")
+                completion(.failure(error))
+            }
+        }
+        
+        self.task = task
+        task.resume()
+    }
+    
+    // MARK: - Network Methods
+    
+    private func makeOAuthRequest(code: String) -> URLRequest? {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "unsplash.com"
@@ -35,76 +99,5 @@ final class OAuth2Service {
         request.httpMethod = "POST"
         
         return request
-    }
-}
-
-extension OAuth2Service {
-    func fetchOAuthToken(
-        _ code: String,
-        completion: @escaping (Result<String, Error>) -> Void
-    ) {
-        assert(Thread.isMainThread)
-        
-        guard lastCode != code else {
-            completion(.failure(AuthServiceError.invalidRequest))
-            return
-        }
-        
-        task?.cancel()
-        
-        lastCode = code
-        
-        guard let request = makeOAuthTokenRequest(code: code) else {
-            print("OAuth2Service :: Ошибка создания запроса на получение токена")
-            completion(.failure(AuthServiceError.invalidRequest))
-            lastCode = nil
-            return
-        }
-        
-        let newTask = urlSession.dataTask(with: request) { [weak self] data, response, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                
-                defer {
-                    self.task = nil
-                    self.lastCode = nil
-                }
-                
-                if let error = error {
-                    print("OAuth2Service :: Сетевая ошибка при получении токена: \(error)")
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let data = data else {
-                    print("OAuth2Service :: Отсутствуют данные в ответе")
-                    completion(.failure(NetworkError.invalidRequest))
-                    return
-                }
-                
-                do {
-                    let decoder = JSONDecoder()
-                    let responseBody = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                    
-                    let token = responseBody.accessToken
-                    OAuth2TokenStorage.shared.token = token
-                    completion(.success(token))
-                } catch {
-                    print("OAuth2Service :: Ошибка декодирования OAuthTokenResponseBody: \(error)")
-                    completion(.failure(NetworkError.decodingError(error)))
-                }
-            }
-        }
-        
-        self.task = newTask
-        newTask.resume()
-    }
-}
-
-extension NetworkError {
-    static let invalidRequest = NetworkError.httpStatusCode(-1)
-    
-    static func decodingError(_ error: Error) -> NetworkError {
-        return .httpStatusCode(-2)
     }
 }

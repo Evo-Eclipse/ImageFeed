@@ -92,7 +92,7 @@ final class WebViewViewController: UIViewController {
     
     private func loadAuthPage() {
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
-            print("Web View Controller: Invalid service URL")
+            assertionFailure("Invalid service URL")
             return
         }
         
@@ -104,7 +104,7 @@ final class WebViewViewController: UIViewController {
         ]
         
         guard let url = urlComponents.url else {
-            print("Web View Controller: Invalid components URL")
+            assertionFailure("Invalid components URL")
             return
         }
         

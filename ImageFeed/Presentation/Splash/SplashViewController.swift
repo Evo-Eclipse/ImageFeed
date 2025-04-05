@@ -6,16 +6,32 @@ final class SplashViewController: UIViewController {
     
     private let showAuthSegueIdentifier = "ShowAuth"
     private let tabBarViewControllerIdentifier = "TabBarViewController"
-    private let oauth2TokenStorage = OAuth2TokenStorage.shared
+    private let oauth2Service = OAuth2Service.shared
+    private let oauth2Storage = OAuth2Storage.shared
+    private let profileService = ProfileService.shared
+    private let profileStorage = ProfileStorage.shared
+    private let profileImageService = ProfileImageService.shared
+    private let profileImageStorage = ProfileImageStorage.shared
     
     // MARK: - Overrides Methods
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        if oauth2TokenStorage.token != nil {
-            switchToTabBarViewController()
+        if let token = oauth2Storage.token {
+            // Проверяем наличие и свежесть данных профиля
+            let needsProfileData = profileStorage.profile == nil || profileStorage.isExpired
+            let needsProfileImage = profileImageStorage.profileImage == nil || profileImageStorage.isExpired
+            
+            if !needsProfileData && !needsProfileImage {
+                // У нас уже есть актуальные данные
+                switchToTabBarViewController()
+            } else {
+                // Нужно обновить данные
+                fetchProfile(token: token)
+            }
         } else {
+            // Нет токена - нужно авторизоваться
             performSegue(withIdentifier: showAuthSegueIdentifier, sender: nil)
         }
     }
@@ -38,9 +54,43 @@ final class SplashViewController: UIViewController {
     
     // MARK: - Private Methods
     
+    private func fetchProfile(token: String) {
+        UIBlockingProgressHUD.show()
+        
+        profileService.fetchProfile(token) { [weak self] profileResult in
+            guard let self = self else { return }
+            
+            switch profileResult {
+            case .success(let profile):
+                self.profileStorage.profile = profile
+                self.fetchProfileImage(token: token, username: profile.username)
+                
+            case .failure(let error):
+                UIBlockingProgressHUD.dismiss()
+                self.showErrorAlert()
+            }
+        }
+    }
+    
+    private func fetchProfileImage(token: String, username: String) {
+        profileImageService.fetchProfileImageURL(token: token, username: username) { [weak self] imageResult in
+            UIBlockingProgressHUD.dismiss()
+            guard let self = self else { return }
+            
+            switch imageResult {
+            case .success(let profileImage):
+                self.profileImageStorage.profileImage = profileImage
+                self.switchToTabBarViewController()
+                
+            case .failure(let error):
+                self.showErrorAlert()
+            }
+        }
+    }
+    
     private func switchToTabBarViewController() {
         guard let window = UIApplication.shared.windows.first else {
-            fatalError("SplashViewController :: Invalid configuration, no main window found")
+            fatalError("Invalid configuration, no main window found")
         }
         
         let tabBarViewController = UIStoryboard(name: "Main", bundle: .main)
@@ -57,12 +107,47 @@ final class SplashViewController: UIViewController {
             completion: nil
         )
     }
+    
+    private func showErrorAlert() {
+        let alert = UIAlertController(
+            title: "Ошибка",
+            message: "Не удалось загрузить данные профиля",
+            preferredStyle: .alert
+        )
+        
+        let retryAction = UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+            guard let token = self?.oauth2Storage.token else { return }
+            self?.fetchProfile(token: token)
+        }
+        
+        let loginAction = UIAlertAction(title: "Войти", style: .cancel) { [weak self] _ in
+            self?.performSegue(withIdentifier: self?.showAuthSegueIdentifier ?? "", sender: nil)
+        }
+        
+        alert.addAction(retryAction)
+        alert.addAction(loginAction)
+        
+        present(alert, animated: true)
+    }
 }
 
 // MARK: - AuthViewControllerDelegate
 
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ viewController: AuthViewController, didAuthenticateWithCode code: String) {
-        switchToTabBarViewController()
+        UIBlockingProgressHUD.show()
+        
+        oauth2Service.fetchOAuthToken(code) { [weak self] result in
+            guard let self = self else { return }
+            
+            switch result {
+            case .success(let token):
+                self.oauth2Storage.token = token
+                self.fetchProfile(token: token)
+            case .failure(let error):
+                UIBlockingProgressHUD.dismiss()
+                self.showErrorAlert()
+            }
+        }
     }
 }

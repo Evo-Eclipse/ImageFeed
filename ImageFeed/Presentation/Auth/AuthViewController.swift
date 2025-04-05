@@ -13,7 +13,6 @@ final class AuthViewController: UIViewController {
     // MARK: - Private Properties
     
     private let showWebViewSegueIdentifier = "ShowWebView"
-    private let oauth2Service = OAuth2Service.shared
     
     private lazy var logoImage: UIImageView = {
         let imageView = UIImageView()
@@ -101,12 +100,6 @@ final class AuthViewController: UIViewController {
         navigationItem.backBarButtonItem = UIBarButtonItem(
             title: "", style: .plain, target: nil, action: nil)
     }
-    
-    private func fetchOAuthToken(with code: String, completion: @escaping (Result<String, Error>) -> Void) {
-        oauth2Service.fetchOAuthToken(code) { result in
-            completion(result)
-        }
-    }
 }
 
 // MARK: - WebViewViewControllerDelegate
@@ -116,18 +109,7 @@ extension AuthViewController: WebViewViewControllerDelegate {
         _ viewController: WebViewViewController, didAuthenticateWithCode code: String
     ) {
         viewController.dismiss(animated: true)
-        UIBlockingProgressHUD.show()
-        fetchOAuthToken(with: code) { [weak self] result in
-            UIBlockingProgressHUD.dismiss()
-            guard let self else { return }
-            
-            switch result {
-            case .success:
-                self.delegate?.authViewController(self, didAuthenticateWithCode: code)
-            case .failure(let error):
-                print("AuthViewController :: Ошибка получения токена: \(error)")
-            }
-        }
+        delegate?.authViewController(self, didAuthenticateWithCode: code)
     }
     
     func webViewViewControllerDidCancel(_ viewController: WebViewViewController) {
