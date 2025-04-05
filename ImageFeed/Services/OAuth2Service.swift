@@ -1,7 +1,15 @@
 import Foundation
 
+enum AuthServiceError: Error {
+    case invalidRequest
+}
+
 final class OAuth2Service {
     static let shared = OAuth2Service()
+    
+    private let urlSession = URLSession.shared
+    private var task: URLSessionTask?
+    private var lastCode: String?
     
     private init() {}
     
@@ -35,16 +43,45 @@ extension OAuth2Service {
         _ code: String,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
-        guard let request = makeOAuthTokenRequest(code: code) else {
-            print("OAuth2Service :: Ошибка создания запроса на получение токена")
-            completion(.failure(NetworkError.invalidRequest))
+        assert(Thread.isMainThread)
+        
+        guard lastCode != code else {
+            completion(.failure(AuthServiceError.invalidRequest))
             return
         }
         
-        let task = URLSession.shared.data(for: request) { result in
-            
-            switch result {
-            case .success(let data):
+        task?.cancel()
+        
+        lastCode = code
+        
+        guard let request = makeOAuthTokenRequest(code: code) else {
+            print("OAuth2Service :: Ошибка создания запроса на получение токена")
+            completion(.failure(AuthServiceError.invalidRequest))
+            lastCode = nil
+            return
+        }
+        
+        let newTask = urlSession.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                
+                defer {
+                    self.task = nil
+                    self.lastCode = nil
+                }
+                
+                if let error = error {
+                    print("OAuth2Service :: Сетевая ошибка при получении токена: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let data = data else {
+                    print("OAuth2Service :: Отсутствуют данные в ответе")
+                    completion(.failure(NetworkError.invalidRequest))
+                    return
+                }
+                
                 do {
                     let decoder = JSONDecoder()
                     let responseBody = try decoder.decode(OAuthTokenResponseBody.self, from: data)
@@ -56,13 +93,11 @@ extension OAuth2Service {
                     print("OAuth2Service :: Ошибка декодирования OAuthTokenResponseBody: \(error)")
                     completion(.failure(NetworkError.decodingError(error)))
                 }
-            case .failure(let error):
-                print("OAuth2Service :: Сетевая ошибка при получении токена: \(error)")
-                completion(.failure(error))
             }
         }
         
-        task.resume()
+        self.task = newTask
+        newTask.resume()
     }
 }
 
