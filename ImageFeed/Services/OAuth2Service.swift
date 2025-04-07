@@ -40,13 +40,13 @@ final class OAuth2Service {
         lastCode = code
         
         guard let request = makeOAuthRequest(code: code) else {
-            print("[OAuth2Service.fetchOAuthToken] Error: Failed to create token request")
+            print("[OAuth2Service.fetchOAuthToken] Error: Failed to create OAuth2 token request")
             completion(.failure(NetworkError.invalidRequest))
             lastCode = nil
             return
         }
         
-        let task = urlSession.data(for: request) { [weak self] result in
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthResult, Error>) in
             guard let self = self else { return }
             
             defer {
@@ -55,18 +55,11 @@ final class OAuth2Service {
             }
             
             switch result {
-            case .success(let data):
-                do {
-                    let decoder = JSONDecoder()
-                    let responseBody = try decoder.decode(OAuthResult.self, from: data)
-                    completion(.success(responseBody.accessToken))
-                } catch {
-                    print("[OAuth2Service.fetchOAuthToken] Error: Failed to decode token response - \(error)")
-                    completion(.failure(NetworkError.decodingError(error)))
-                }
+            case .success(let oauthResult):
+                completion(.success(oauthResult.accessToken))
                 
             case .failure(let error):
-                print("[OAuth2Service.fetchOAuthToken] Error: Network error while fetching token - \(error)")
+                print("[OAuth2Service.fetchOAuthToken]: Error - \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }

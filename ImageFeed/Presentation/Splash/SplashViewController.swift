@@ -65,9 +65,9 @@ final class SplashViewController: UIViewController {
                 self.profileStorage.profile = profile
                 self.fetchProfileImage(token: token, username: profile.username)
                 
-            case .failure(let error):
+            case .failure(_):
                 UIBlockingProgressHUD.dismiss()
-                self.showErrorAlert()
+                self.showProfileErrorAlert()
             }
         }
     }
@@ -82,8 +82,8 @@ final class SplashViewController: UIViewController {
                 self.profileImageStorage.profileImage = profileImage
                 self.switchToTabBarViewController()
                 
-            case .failure(let error):
-                self.showErrorAlert()
+            case .failure(_):
+                self.showProfileErrorAlert()
             }
         }
     }
@@ -108,7 +108,7 @@ final class SplashViewController: UIViewController {
         )
     }
     
-    private func showErrorAlert() {
+    private func showProfileErrorAlert() {
         let alert = UIAlertController(
             title: "Ошибка",
             message: "Не удалось загрузить данные профиля",
@@ -120,12 +120,7 @@ final class SplashViewController: UIViewController {
             self?.fetchProfile(token: token)
         }
         
-        let loginAction = UIAlertAction(title: "Войти", style: .cancel) { [weak self] _ in
-            self?.performSegue(withIdentifier: self?.showAuthSegueIdentifier ?? "", sender: nil)
-        }
-        
         alert.addAction(retryAction)
-        alert.addAction(loginAction)
         
         present(alert, animated: true)
     }
@@ -139,14 +134,14 @@ extension SplashViewController: AuthViewControllerDelegate {
         
         oauth2Service.fetchOAuthToken(code) { [weak self] result in
             guard let self = self else { return }
+            UIBlockingProgressHUD.dismiss()
             
             switch result {
             case .success(let token):
                 self.oauth2Storage.token = token
                 self.fetchProfile(token: token)
-            case .failure(let error):
-                UIBlockingProgressHUD.dismiss()
-                self.showErrorAlert()
+            case .failure(_):
+                viewController.showAuthErrorAlert()
             }
         }
     }

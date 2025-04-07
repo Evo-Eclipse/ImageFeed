@@ -44,13 +44,13 @@ final class ProfileImageService {
         lastToken = token
         
         guard let request = makeUserRequest(token: token, username: username) else {
-            print("[ProfileService.fetchProfile] Error: Failed to create profile request")
+            print("[ProfileImageService.fetchProfileImageURL] Error: Failed to create profile image request")
             completion(.failure(NetworkError.invalidRequest))
             lastToken = nil
             return
         }
         
-        let task = urlSession.data(for: request) { [weak self] result in
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<UserResult, Error>) in
             guard let self = self else { return }
             
             defer {
@@ -59,27 +59,18 @@ final class ProfileImageService {
             }
             
             switch result {
-            case .success(let data):
-                do {
-                    let decoder = JSONDecoder()
-                    let userResult = try decoder.decode(UserResult.self, from: data)
-                    
-                    let profileImage = self.createProfileImage(from: userResult)
-                    completion(.success(profileImage))
-                    
-                    NotificationCenter.default.post(
-                        name: ProfileImageService.didChangeNotification,
-                        object: self,
-                        userInfo: ["profileImageURLs": profileImage]
-                    )
-                    
-                } catch {
-                    print("[ProfileService.fetchProfile] Error: Failed to decode profile response - \(error)")
-                    completion(.failure(NetworkError.decodingError(error)))
-                }
+            case .success(let userResult):
+                let profileImage = self.createProfileImage(from: userResult)
+                completion(.success(profileImage))
+                
+                NotificationCenter.default.post(
+                    name: ProfileImageService.didChangeNotification,
+                    object: self,
+                    userInfo: ["profileImageURLs": profileImage]
+                )
                 
             case .failure(let error):
-                print("[ProfileService.fetchProfile] Error: Network error while fetching profile - \(error)")
+                print("[ProfileImageService.fetchProfileImageURL]: Error - \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }

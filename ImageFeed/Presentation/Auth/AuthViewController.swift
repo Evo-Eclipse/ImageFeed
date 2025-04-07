@@ -62,6 +62,21 @@ final class AuthViewController: UIViewController {
         performSegue(withIdentifier: showWebViewSegueIdentifier, sender: self)
     }
     
+    // MARK: - Public Methods
+    
+    func showAuthErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+        
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alert.addAction(okAction)
+        
+        present(alert, animated: true)
+    }
+    
     // MARK: - Private Methods
     
     private func setupViews() {

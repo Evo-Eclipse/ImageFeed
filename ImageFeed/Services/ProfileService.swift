@@ -40,13 +40,13 @@ final class ProfileService {
         lastToken = token
         
         guard let request = makeProfileRequest(token: token) else {
-            print("[ProfileImageService.fetchProfileImageURL] Error: Failed to create profile image request")
+            print("[ProfileService.fetchProfile] Error: Failed to create profile request")
             completion(.failure(NetworkError.invalidRequest))
             lastToken = nil
             return
         }
         
-        let task = urlSession.data(for: request) { [weak self] result in
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<ProfileResult, Error>) in
             guard let self = self else { return }
             
             defer {
@@ -55,20 +55,12 @@ final class ProfileService {
             }
             
             switch result {
-            case .success(let data):
-                do {
-                    let decoder = JSONDecoder()
-                    let profileResult = try decoder.decode(ProfileResult.self, from: data)
-                    
-                    let profile = self.createProfile(from: profileResult)
-                    completion(.success(profile))
-                } catch {
-                    print("[ProfileImageService.fetchProfileImageURL] Error: Failed to decode profile image response - \(error)")
-                    completion(.failure(NetworkError.decodingError(error)))
-                }
+            case .success(let profileResult):
+                let profile = self.createProfile(from: profileResult)
+                completion(.success(profile))
                 
             case .failure(let error):
-                print("[ProfileImageService.fetchProfileImageURL] Error: Network error while fetching profile image - \(error)")
+                print("[ProfileService.fetchProfile]: Error - \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }
