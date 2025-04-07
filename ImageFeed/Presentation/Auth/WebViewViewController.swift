@@ -18,6 +18,8 @@ final class WebViewViewController: UIViewController {
     
     // MARK: - Private Properties
     
+    private var estimatedProgressObservation: NSKeyValueObservation?
+    
     private lazy var webView: WKWebView = {
         let webView = WKWebView()
         webView.backgroundColor = .ypWhite
@@ -30,6 +32,7 @@ final class WebViewViewController: UIViewController {
         return progressView
     }()
     
+    
     // MARK: - Overrides Methods
     
     override func viewDidLoad() {
@@ -39,36 +42,21 @@ final class WebViewViewController: UIViewController {
         
         setupViews()
         setupConstraints()
+        setupProgressObserver()
         loadAuthPage()
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        webView.addObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            options: .new,
-            context: nil
-        )
-    }
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
-    }
-    
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey : Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        if keyPath == #keyPath(WKWebView.estimatedProgress) {
-            updateProgressView()
-        } else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-        }
-    }
-    
     // MARK: - Private Methods
+    
+    private func setupProgressObserver() {
+        estimatedProgressObservation = webView.observe(
+            \.estimatedProgress,
+            options: [],
+            changeHandler: { [weak self] _, _ in
+                guard let self = self else { return }
+                self.updateProgressView()
+            })
+    }
     
     private func setupViews() {
         [webView, progressView].forEach {
