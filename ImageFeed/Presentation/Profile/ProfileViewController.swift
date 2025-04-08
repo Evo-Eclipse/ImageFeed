@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class ProfileViewController: UIViewController {
     
@@ -134,17 +135,14 @@ final class ProfileViewController: UIViewController {
             return
         }
         
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
-            guard let self = self,
-                  let data = data,
-                  let image = UIImage(data: data),
-                  error == nil else {
-                return
-            }
-            
-            DispatchQueue.main.async {
-                self.profileImage.image = image
-            }
-        }.resume()
+        self.profileImage.kf.indicatorType = .activity
+        self.profileImage.kf.setImage(
+            with: url,
+            placeholder: UIImage(named: "icon.user"),
+            options: [
+                .transition(.fade(0.2)),
+                .cacheOriginalImage
+            ]
+        )
     }
 }
