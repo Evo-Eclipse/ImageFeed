@@ -4,7 +4,7 @@ final class SplashViewController: UIViewController {
     
     // MARK: - Private Properties
     
-    private let showAuthSegueIdentifier = "ShowAuth"
+    private let showAuthViewIdentifier = "AuthViewController"
     private let tabBarViewControllerIdentifier = "TabBarViewController"
     private let oauth2Service = OAuth2Service.shared
     private let oauth2Storage = OAuth2Storage.shared
@@ -13,46 +13,71 @@ final class SplashViewController: UIViewController {
     private let profileImageService = ProfileImageService.shared
     private let profileImageStorage = ProfileImageStorage.shared
     
+    private lazy var logoImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "logo.launch.screen")
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
     // MARK: - Overrides Methods
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.backgroundColor = .ypBlack
+        
+        setupViews()
+        setupConstraints()
+    }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
         if let token = oauth2Storage.token {
-            // Проверяем наличие и свежесть данных профиля
+            // Check profile data existence and freshness
             let needsProfileData = profileStorage.profile == nil || profileStorage.isExpired
             let needsProfileImage = profileImageStorage.profileImage == nil || profileImageStorage.isExpired
             
             if !needsProfileData && !needsProfileImage {
-                // У нас уже есть актуальные данные
+                // We already have up-to-date data
                 switchToTabBarViewController()
             } else {
-                // Нужно обновить данные
+                // We need to update the data
                 fetchProfile(token: token)
             }
         } else {
-            // Нет токена - нужно авторизоваться
-            performSegue(withIdentifier: showAuthSegueIdentifier, sender: nil)
-        }
-    }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == showAuthSegueIdentifier {
-            guard
-                let navigationController = segue.destination as? UINavigationController,
-                let viewController = navigationController.topViewController as? AuthViewController
-            else {
-                assertionFailure("Invalid segue destination")
-                return
-            }
-            
-            viewController.delegate = self
-        } else {
-            super.prepare(for: segue, sender: sender)
+            // No token - need to authorize
+            presentAuthViewController()
         }
     }
     
     // MARK: - Private Methods
+    
+    private func setupViews() {
+        view.addSubview(logoImageView)
+    }
+    
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            logoImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -36)
+        ])
+    }
+    
+    private func presentAuthViewController() {
+        let storyboard = UIStoryboard(name: "Main", bundle: .main)
+        guard let authViewController = storyboard.instantiateViewController(withIdentifier: showAuthViewIdentifier) as? AuthViewController else {
+            assertionFailure("Failed to instantiate AuthViewController from Main storyboard")
+            return
+        }
+        
+        authViewController.delegate = self
+        authViewController.modalPresentationStyle = .fullScreen
+        
+        present(authViewController, animated: true)
+    }
     
     private func fetchProfile(token: String) {
         UIBlockingProgressHUD.show()
