@@ -45,6 +45,14 @@ final class ProfileViewController: UIViewController {
         return button
     }()
     
+    // MARK: - Initializers
+    
+    deinit {
+        if let observer = profileImageServiceObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+    
     // MARK: - Overrides Methods
     
     override func viewDidLoad() {
@@ -68,12 +76,6 @@ final class ProfileViewController: UIViewController {
         
         updateProfileDetails()
         updateAvatar()
-    }
-    
-    deinit {
-        if let observer = profileImageServiceObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
     }
     
     // MARK: - Actions

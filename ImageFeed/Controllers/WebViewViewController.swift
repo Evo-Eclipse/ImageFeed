@@ -32,31 +32,34 @@ final class WebViewViewController: UIViewController {
         return progressView
     }()
     
+    // MARK: - Initializers
+    
+    deinit {
+        estimatedProgressObservation?.invalidate()
+    }
     
     // MARK: - Overrides Methods
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        view.backgroundColor = .ypWhite
         webView.navigationDelegate = self
         
         setupViews()
         setupConstraints()
+        setupNavigationBar()
         setupProgressObserver()
         loadAuthPage()
     }
     
-    // MARK: - Private Methods
+    // MARK: - Actions
     
-    private func setupProgressObserver() {
-        estimatedProgressObservation = webView.observe(
-            \.estimatedProgress,
-            options: [],
-            changeHandler: { [weak self] _, _ in
-                guard let self = self else { return }
-                self.updateProgressView()
-            })
+    @objc private func didTapBackButton() {
+        delegate?.webViewViewControllerDidCancel(self)
     }
+    
+    // MARK: - Private Methods
     
     private func setupViews() {
         [webView, progressView].forEach {
@@ -77,6 +80,29 @@ final class WebViewViewController: UIViewController {
             progressView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor)
         ])
     }
+    
+    private func setupNavigationBar() {
+        navigationItem.hidesBackButton = true
+        
+        let backBarButtonItem = UIBarButtonItem(
+            image: UIImage(named: "button.backward.black")?.withRenderingMode(.alwaysOriginal),
+            style: .plain,
+            target: self,
+            action: #selector(didTapBackButton)
+        )
+        navigationItem.leftBarButtonItem = backBarButtonItem
+    }
+    
+    private func setupProgressObserver() {
+        estimatedProgressObservation = webView.observe(
+            \.estimatedProgress,
+            options: [],
+            changeHandler: { [weak self] _, _ in
+                guard let self = self else { return }
+                self.updateProgressView()
+            })
+    }
+    
     
     private func loadAuthPage() {
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {

@@ -4,8 +4,6 @@ final class SplashViewController: UIViewController {
     
     // MARK: - Private Properties
     
-    private let showAuthViewIdentifier = "AuthViewController"
-    private let tabBarViewControllerIdentifier = "TabBarViewController"
     private let oauth2Service = OAuth2Service.shared
     private let oauth2Storage = OAuth2Storage.shared
     private let profileService = ProfileService.shared
@@ -17,7 +15,6 @@ final class SplashViewController: UIViewController {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "logo.launch.screen")
         imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
     
@@ -56,6 +53,7 @@ final class SplashViewController: UIViewController {
     // MARK: - Private Methods
     
     private func setupViews() {
+        logoImageView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(logoImageView)
     }
     
@@ -67,22 +65,20 @@ final class SplashViewController: UIViewController {
     }
     
     private func presentAuthViewController() {
-        let storyboard = UIStoryboard(name: "Main", bundle: .main)
-        guard let authViewController = storyboard.instantiateViewController(withIdentifier: showAuthViewIdentifier) as? AuthViewController else {
-            assertionFailure("Failed to instantiate AuthViewController from Main storyboard")
-            return
-        }
-        
+        let authViewController = AuthViewController()
         authViewController.delegate = self
-        authViewController.modalPresentationStyle = .fullScreen
         
-        present(authViewController, animated: true)
+        let navigationController = UINavigationController(rootViewController: authViewController)
+        navigationController.modalPresentationStyle = .fullScreen
+        
+        present(navigationController, animated: true)
     }
     
     private func fetchProfile(token: String) {
         UIBlockingProgressHUD.show()
         
         profileService.fetchProfile(token) { [weak self] profileResult in
+            UIBlockingProgressHUD.dismiss()
             guard let self = self else { return }
             
             switch profileResult {
@@ -91,13 +87,14 @@ final class SplashViewController: UIViewController {
                 self.fetchProfileImage(token: token, username: profile.username)
                 
             case .failure(_):
-                UIBlockingProgressHUD.dismiss()
                 self.showProfileErrorAlert()
             }
         }
     }
     
     private func fetchProfileImage(token: String, username: String) {
+        UIBlockingProgressHUD.show()
+        
         profileImageService.fetchProfileImageURL(token: token, username: username) { [weak self] imageResult in
             UIBlockingProgressHUD.dismiss()
             guard let self = self else { return }
@@ -118,8 +115,7 @@ final class SplashViewController: UIViewController {
             fatalError("Invalid configuration, no main window found")
         }
         
-        let tabBarViewController = UIStoryboard(name: "Main", bundle: .main)
-            .instantiateViewController(withIdentifier: tabBarViewControllerIdentifier)
+        let tabBarViewController = TabBarViewController()
         
         window.rootViewController = tabBarViewController
         window.makeKeyAndVisible()
@@ -135,8 +131,8 @@ final class SplashViewController: UIViewController {
     
     private func showProfileErrorAlert() {
         let alert = UIAlertController(
-            title: "Ошибка",
-            message: "Не удалось загрузить данные профиля",
+            title: "Что-то пошло не так(",
+            message: "Не удалось получить профиль",
             preferredStyle: .alert
         )
         
