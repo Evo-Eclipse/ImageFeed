@@ -2,10 +2,75 @@ import Foundation
 
 final class OAuth2Service {
     static let shared = OAuth2Service()
-    
     private init() {}
     
-    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
+    // MARK: - Private Properties
+    
+    private let urlSession = URLSession.shared
+    private var task: URLSessionTask?
+    private var lastCode: String?
+    
+    // MARK: - Structures
+    
+    struct OAuthResult: Decodable {
+        let accessToken: String
+        let tokenType: String
+        let scope: String
+        let createdAt: Int
+        
+        enum CodingKeys: String, CodingKey {
+            case accessToken = "access_token"
+            case tokenType = "token_type"
+            case scope
+            case createdAt = "created_at"
+        }
+    }
+    
+    // MARK: - Public Methods
+    
+    func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        
+        guard lastCode != code else {
+            completion(.failure(NetworkError.invalidRequest))
+            return
+        }
+        
+        task?.cancel()
+        lastCode = code
+        
+        guard let request = makeOAuthRequest(code: code) else {
+            print("[OAuth2Service.fetchOAuthToken] Error: Failed to create OAuth2 token request")
+            completion(.failure(NetworkError.invalidRequest))
+            lastCode = nil
+            return
+        }
+        
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthResult, Error>) in
+            guard let self = self else { return }
+            
+            defer {
+                self.task = nil
+                self.lastCode = nil
+            }
+            
+            switch result {
+            case .success(let oauthResult):
+                completion(.success(oauthResult.accessToken))
+                
+            case .failure(let error):
+                print("[OAuth2Service.fetchOAuthToken]: Error - \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }
+        
+        self.task = task
+        task.resume()
+    }
+    
+    // MARK: - Network Methods
+    
+    private func makeOAuthRequest(code: String) -> URLRequest? {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "unsplash.com"
@@ -27,49 +92,5 @@ final class OAuth2Service {
         request.httpMethod = "POST"
         
         return request
-    }
-}
-
-extension OAuth2Service {
-    func fetchOAuthToken(
-        _ code: String,
-        completion: @escaping (Result<String, Error>) -> Void
-    ) {
-        guard let request = makeOAuthTokenRequest(code: code) else {
-            print("OAuth2Service :: Ошибка создания запроса на получение токена")
-            completion(.failure(NetworkError.invalidRequest))
-            return
-        }
-        
-        let task = URLSession.shared.data(for: request) { result in
-            
-            switch result {
-            case .success(let data):
-                do {
-                    let decoder = JSONDecoder()
-                    let responseBody = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                    
-                    let token = responseBody.accessToken
-                    OAuth2TokenStorage.shared.token = token
-                    completion(.success(token))
-                } catch {
-                    print("OAuth2Service :: Ошибка декодирования OAuthTokenResponseBody: \(error)")
-                    completion(.failure(NetworkError.decodingError(error)))
-                }
-            case .failure(let error):
-                print("OAuth2Service :: Сетевая ошибка при получении токена: \(error)")
-                completion(.failure(error))
-            }
-        }
-        
-        task.resume()
-    }
-}
-
-extension NetworkError {
-    static let invalidRequest = NetworkError.httpStatusCode(-1)
-    
-    static func decodingError(_ error: Error) -> NetworkError {
-        return .httpStatusCode(-2)
     }
 }

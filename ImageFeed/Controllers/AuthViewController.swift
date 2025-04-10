@@ -12,8 +12,6 @@ final class AuthViewController: UIViewController {
     
     // MARK: - Private Properties
     
-    private let showWebViewSegueIdentifier = "ShowWebView"
-    
     private lazy var logoImage: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "logo.auth.screen")
@@ -37,29 +35,35 @@ final class AuthViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        view.backgroundColor = .ypBlack
+        
         setupViews()
         setupConstraints()
         setupActions()
         configureBackButton()
     }
     
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == showWebViewSegueIdentifier {
-            guard let viewController = segue.destination as? WebViewViewController else {
-                assertionFailure("Invalid segue destination")
-                return
-            }
-            
-            viewController.delegate = self
-        } else {
-            super.prepare(for: segue, sender: sender)
-        }
-    }
-    
     // MARK: - Actions
     
     @objc private func didTapLoginButton() {
-        performSegue(withIdentifier: showWebViewSegueIdentifier, sender: self)
+        let webViewViewController = WebViewViewController()
+        webViewViewController.delegate = self
+        navigationController?.pushViewController(webViewViewController, animated: true)
+    }
+    
+    // MARK: - Public Methods
+    
+    func showAuthErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+        
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alert.addAction(okAction)
+        
+        present(alert, animated: true)
     }
     
     // MARK: - Private Methods
@@ -108,6 +112,7 @@ extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(
         _ viewController: WebViewViewController, didAuthenticateWithCode code: String
     ) {
+        navigationController?.popViewController(animated: true)
         delegate?.authViewController(self, didAuthenticateWithCode: code)
     }
     

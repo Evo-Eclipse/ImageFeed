@@ -18,6 +18,8 @@ final class WebViewViewController: UIViewController {
     
     // MARK: - Private Properties
     
+    private var estimatedProgressObservation: NSKeyValueObservation?
+    
     private lazy var webView: WKWebView = {
         let webView = WKWebView()
         webView.backgroundColor = .ypWhite
@@ -30,42 +32,31 @@ final class WebViewViewController: UIViewController {
         return progressView
     }()
     
+    // MARK: - Initializers
+    
+    deinit {
+        estimatedProgressObservation?.invalidate()
+    }
+    
     // MARK: - Overrides Methods
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        view.backgroundColor = .ypWhite
         webView.navigationDelegate = self
         
         setupViews()
         setupConstraints()
+        setupNavigationBar()
+        setupProgressObserver()
         loadAuthPage()
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        webView.addObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            options: .new,
-            context: nil
-        )
-    }
+    // MARK: - Actions
     
-    override func viewWillDisappear(_ animated: Bool) {
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
-    }
-    
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey : Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        if keyPath == #keyPath(WKWebView.estimatedProgress) {
-            updateProgressView()
-        } else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-        }
+    @objc private func didTapBackButton() {
+        delegate?.webViewViewControllerDidCancel(self)
     }
     
     // MARK: - Private Methods
@@ -90,9 +81,32 @@ final class WebViewViewController: UIViewController {
         ])
     }
     
+    private func setupNavigationBar() {
+        navigationItem.hidesBackButton = true
+        
+        let backBarButtonItem = UIBarButtonItem(
+            image: UIImage(named: "button.backward.black")?.withRenderingMode(.alwaysOriginal),
+            style: .plain,
+            target: self,
+            action: #selector(didTapBackButton)
+        )
+        navigationItem.leftBarButtonItem = backBarButtonItem
+    }
+    
+    private func setupProgressObserver() {
+        estimatedProgressObservation = webView.observe(
+            \.estimatedProgress,
+             options: [.new],
+            changeHandler: { [weak self] _, _ in
+                guard let self = self else { return }
+                self.updateProgressView()
+            })
+    }
+    
+    
     private func loadAuthPage() {
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
-            print("Web View Controller: Invalid service URL")
+            assertionFailure("Invalid service URL")
             return
         }
         
@@ -104,7 +118,7 @@ final class WebViewViewController: UIViewController {
         ]
         
         guard let url = urlComponents.url else {
-            print("Web View Controller: Invalid components URL")
+            assertionFailure("Invalid components URL")
             return
         }
         
