@@ -48,6 +48,7 @@ final class OAuth2Service {
         
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthResult, Error>) in
             guard let self = self else { return }
+            print("[OAuth2Service.fetchOAuthToken] Network: Request completed")
             
             defer {
                 self.task = nil

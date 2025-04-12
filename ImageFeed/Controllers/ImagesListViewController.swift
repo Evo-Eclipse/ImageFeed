@@ -4,7 +4,9 @@ final class ImagesListViewController: UIViewController {
     
     // MARK: - Private Properties
     
-    private let photosName: [String] = Array(0..<20).map{ "\($0)" }
+    private var photos: [Photo] = []
+    private let imagesListService = ImagesListService.shared
+    private var imagesListServiceObserver: NSObjectProtocol?
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -24,6 +26,14 @@ final class ImagesListViewController: UIViewController {
         return formatter
     }()
     
+    // MARK: - Initializers
+    
+    deinit {
+        if let observer = imagesListServiceObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+    
     // MARK: - Overrides Methods
     
     override func viewDidLoad() {
@@ -33,6 +43,21 @@ final class ImagesListViewController: UIViewController {
         
         setupViews()
         setupConstraints()
+        
+        imagesListServiceObserver = NotificationCenter.default.addObserver(
+            forName: ImagesListService.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard
+                let self,
+                let newPhotos = notification.userInfo?[ImagesListService.newPhotosUserInfoKey] as? [Photo]
+            else { return }
+            
+            self.updateTableViewAnimated(with: newPhotos)
+        }
+        
+        imagesListService.fetchPhotosNextPage()
     }
     
     // MARK: - Private Methods
@@ -51,15 +76,28 @@ final class ImagesListViewController: UIViewController {
         ])
     }
     
-    private func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return
+    private func updateTableViewAnimated(with newPhotos: [Photo]) {
+        let startIndex = photos.count
+        let newCount = newPhotos.count
+        
+        guard newCount > 0 else { return }
+        
+        photos.append(contentsOf: newPhotos)
+        
+        let indexPaths = (startIndex..<(startIndex + newCount)).map { IndexPath(row: $0, section: 0) }
+        
+        tableView.performBatchUpdates {
+            tableView.insertRows(at: indexPaths, with: .automatic)
         }
+    }
+    
+    private func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
+        let photo = photos[indexPath.row]
+        let dateText = dateFormatter.string(from: photo.createdAt)
         
-        let dateText = dateFormatter.string(from: Date())
-        let isLiked = indexPath.row % 2 == 0
+        cell.configure(with: nil, date: dateText, isLiked: photo.isLiked)
         
-        cell.configure(with: image, date: dateText, isLiked: isLiked)
+        cell.loadImage(from: photo.urls.small)
     }
     
     private func showSingleImageViewController(with image: UIImage) {
@@ -75,26 +113,32 @@ final class ImagesListViewController: UIViewController {
 
 extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return
-        }
+        guard indexPath.row < photos.count else { return }
         
-        showSingleImageViewController(with: image)
+        if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell,
+           let image = cell.getImage() {
+            showSingleImageViewController(with: image)
+        }
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return 0
-        }
+        guard indexPath.row < photos.count else { return 0 }
         
+        let photo = photos[indexPath.row]
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         
         let tableViewWidth = tableView.bounds.width - (imageInsets.left + imageInsets.right)
-        let imageAspectRatio = image.size.height / image.size.width
+        let imageAspectRatio = CGFloat(photo.size.height / photo.size.width)
         let imageViewHeight = tableViewWidth * imageAspectRatio
         
         let cellHeight = imageViewHeight + imageInsets.top + imageInsets.bottom
         return cellHeight
+    }
+    
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if indexPath.row + 1 == photos.count {
+            imagesListService.fetchPhotosNextPage()
+        }
     }
 }
 
@@ -102,7 +146,7 @@ extension ImagesListViewController: UITableViewDelegate {
 
 extension ImagesListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return photosName.count
+        return photos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {

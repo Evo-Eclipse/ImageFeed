@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class ImagesListCell: UITableViewCell {
     
@@ -7,6 +8,8 @@ final class ImagesListCell: UITableViewCell {
     static let reuseIdentifier = "ImagesListCell"
     
     // MARK: - Private Properties
+    
+    private var currentImageURL: URL?
     
     private lazy var cellImageView: UIImageView = {
         let imageView = UIImageView()
@@ -54,19 +57,56 @@ final class ImagesListCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         
+        cellImageView.kf.cancelDownloadTask()
+        
         cellImageView.image = nil
         dateLabel.text = nil
     }
     
     // MARK: - Public Methods
     
-    func configure(with image: UIImage, date: String, isLiked: Bool) {
-        cellImageView.image = image
+    func configure(with image: UIImage?, date: String, isLiked: Bool) {
+        if let image = image {
+            cellImageView.image = image
+        }
+        
         dateLabel.text = date
         
         let likeImage = isLiked ? UIImage(named: "button.like.active") : UIImage(named: "button.like.inactive")
         likeButton.setImage(likeImage, for: .normal)
     }
+    
+    func loadImage(from url: URL) {
+        cellImageView.kf.cancelDownloadTask()
+        currentImageURL = url
+        
+        cellImageView.kf.indicatorType = .activity
+        cellImageView.kf.setImage(
+            with: url,
+            placeholder: UIImage(named: "placeholder.feed"),
+            options: [
+                .transition(.fade(0.2)),
+                .cacheOriginalImage
+            ]
+        )  { [weak self] result in
+            guard let self = self, self.currentImageURL == url else {
+                print("[ImagesListCell] Duplicate image load: \(url.absoluteString)")
+                return
+            }
+            
+            switch result {
+            case .success:
+                break
+            case .failure(let error):
+                print("[ImagesListCell] Error loading image: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func getImage() -> UIImage? {
+        return cellImageView.image
+    }
+    
     
     // MARK: - Private Methods
     

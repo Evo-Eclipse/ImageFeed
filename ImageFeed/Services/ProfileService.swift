@@ -48,6 +48,7 @@ final class ProfileService {
         
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<ProfileResult, Error>) in
             guard let self = self else { return }
+            print("[ProfileService.fetchProfile] Network: Request completed")
             
             defer {
                 self.task = nil
@@ -90,17 +91,17 @@ final class ProfileService {
     
     // MARK: - Private Methods
     
-    private func createProfile(from profileResult: ProfileResult) -> Profile {
-        let firstName = profileResult.firstName ?? ""
-        let lastName = profileResult.lastName ?? ""
+    private func createProfile(from result: ProfileResult) -> Profile {
+        let firstName = result.firstName ?? ""
+        let lastName = result.lastName ?? ""
         let name = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespacesAndNewlines)
-        let loginName = "@\(profileResult.username)"
+        let loginName = "@\(result.username)"
         
         return Profile(
-            username: profileResult.username,
+            username: result.username,
             name: name,
             loginName: loginName,
-            bio: profileResult.bio
+            bio: result.bio
         )
     }
 }
