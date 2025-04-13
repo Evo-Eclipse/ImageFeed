@@ -119,7 +119,7 @@ final class ImagesListViewController: UIViewController {
         let indexPath = IndexPath(row: index, section: 0)
         
         if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell {
-            configCell(for: cell, with: indexPath)
+            cell.setIsLiked(updatedPhoto.isLiked)
         }
     }
     
@@ -197,10 +197,6 @@ extension ImagesListViewController: UITableViewDataSource {
 
 extension ImagesListViewController: ImagesListCellDelegate {
     func imagesListCell(_ cell: ImagesListCell, didTapLikeButton photoId: String, isLiked: Bool) {
-        if let indexPath = tableView.indexPath(for: cell), indexPath.row < photos.count {
-            cell.setIsLiked(!isLiked)
-        }
-
         imagesListService.changeLikeStatus(photoId: photoId, isLike: !isLiked)
     }
 }
