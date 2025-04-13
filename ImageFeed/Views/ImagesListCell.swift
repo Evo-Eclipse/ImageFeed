@@ -1,15 +1,22 @@
 import UIKit
 import Kingfisher
 
+protocol ImagesListCellDelegate: AnyObject {
+    func imagesListCell(_ cell: ImagesListCell, didTapLikeButton photoId: String, isLiked: Bool)
+}
+
 final class ImagesListCell: UITableViewCell {
     
     // MARK: - Public Properties
     
     static let reuseIdentifier = "ImagesListCell"
+    weak var delegate: ImagesListCellDelegate?
     
     // MARK: - Private Properties
     
     private var currentImageURL: URL?
+    private var photoId: String?
+    private var isLiked: Bool = false
     
     private lazy var cellImageView: UIImageView = {
         let imageView = UIImageView()
@@ -29,6 +36,7 @@ final class ImagesListCell: UITableViewCell {
     private lazy var likeButton: UIButton = {
         let button = UIButton(type: .custom)
         button.setImage(UIImage(named: "button.like.inactive"), for: .normal)
+        button.addTarget(self, action: #selector(likeButtonTapped), for: .touchUpInside)
         return button
     }()
     
@@ -61,19 +69,21 @@ final class ImagesListCell: UITableViewCell {
         
         cellImageView.image = nil
         dateLabel.text = nil
+        photoId = nil
     }
     
     // MARK: - Public Methods
     
-    func configure(with image: UIImage?, date: String, isLiked: Bool) {
+    func configure(with image: UIImage?, date: String, isLiked: Bool, photoId: String) {
         if let image = image {
             cellImageView.image = image
         }
         
+        self.photoId = photoId
+        self.isLiked = isLiked
         dateLabel.text = date
         
-        let likeImage = isLiked ? UIImage(named: "button.like.active") : UIImage(named: "button.like.inactive")
-        likeButton.setImage(likeImage, for: .normal)
+        updateLikeButtonImage()
     }
     
     func loadImage(from url: URL) {
@@ -107,6 +117,17 @@ final class ImagesListCell: UITableViewCell {
         return cellImageView.image
     }
     
+    func setIsLiked(_ isLiked: Bool) {
+        self.isLiked = isLiked
+        updateLikeButtonImage()
+    }
+    
+    // MARK: - Actions
+    
+    @objc private func likeButtonTapped() {
+        guard let photoId = photoId else { return }
+        delegate?.imagesListCell(self, didTapLikeButton: photoId, isLiked: isLiked)
+    }
     
     // MARK: - Private Methods
     
@@ -141,5 +162,10 @@ final class ImagesListCell: UITableViewCell {
             dateLabel.bottomAnchor.constraint(equalTo: cellImageView.bottomAnchor, constant: -8),
             dateLabel.trailingAnchor.constraint(lessThanOrEqualTo: cellImageView.trailingAnchor, constant: -8)
         ])
+    }
+    
+    private func updateLikeButtonImage() {
+        let likeImage = isLiked ? UIImage(named: "button.like.active") : UIImage(named: "button.like.inactive")
+        likeButton.setImage(likeImage, for: .normal)
     }
 }

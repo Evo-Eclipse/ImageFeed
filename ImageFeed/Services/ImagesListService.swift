@@ -8,7 +8,10 @@ final class ImagesListService {
     
     static let didChangeNotification = Notification.Name("ImagesListServiceDidChange")
     static let newPhotosUserInfoKey = "newPhotos"
-
+    
+    static let didChangeLikeStatusNotification = Notification.Name("ImagesListServiceDidChangeLikeStatus")
+    static let likedPhotoUserInfoKey = "likedPhoto"
+    
     // MARK: - Private Properties
     
     private let urlSession = URLSession.shared
@@ -23,7 +26,7 @@ final class ImagesListService {
     private let requestHistoryLimit = 5
     private let targetRequestDuration: TimeInterval = 0.5
     private let minItemsPerPage = 10
-    private let maxItemsPerPage = 100
+    private let maxItemsPerPage = 100 // API Maximum seems to be 30
     private let sensitivityFactor = 5.0
     
     //    private var averageRequestDuration: TimeInterval = 0
@@ -62,6 +65,10 @@ final class ImagesListService {
             let small: String
             let thumb: String
         }
+    }
+    
+    struct LikePhotoResult: Decodable {
+        let photo: PhotoResult
     }
     
     // MARK: - Public Methods
@@ -116,6 +123,41 @@ final class ImagesListService {
         task.resume()
     }
     
+    func changeLikeStatus(photoId: String, isLike: Bool) {
+        assert(Thread.isMainThread)
+        
+        guard let token = token else {
+            print("[ImagesListService.changeLikeStatus] Error: No token available")
+            return
+        }
+        
+        guard let request = makeLikeRequest(token: token, photoId: photoId, isLike: isLike) else {
+            print("[ImagesListService.changeLikeStatus] Error: Failed to create like request")
+            return
+        }
+        
+        let likeTask = urlSession.objectTask(for: request) { [weak self] (result: Result<LikePhotoResult, Error>) in
+            guard let self = self else { return }
+            print("[ImagesListService.changeLikeStatus] Network: Request completed")
+            
+            switch result {
+            case .success(let likeResult):
+                if let photo = self.createPhoto(from: likeResult.photo) {
+                    NotificationCenter.default.post(
+                        name: ImagesListService.didChangeLikeStatusNotification,
+                        object: self,
+                        userInfo: [ImagesListService.likedPhotoUserInfoKey: photo]
+                    )
+                }
+                
+            case .failure(let error):
+                print("[ImagesListService.changeLikeStatus]: Error - \(error.localizedDescription)")
+            }
+        }
+        
+        likeTask.resume()
+    }
+    
     // MARK: - Network Methods
     
     private func makePhotoRequest(token: String, page: Int, perPage: Int) -> URLRequest? {
@@ -135,6 +177,23 @@ final class ImagesListService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        return request
+    }
+    
+    private func makeLikeRequest(token: String, photoId: String, isLike: Bool) -> URLRequest? {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "api.unsplash.com"
+        components.path = "/photos/\(photoId)/like"
+        
+        guard let url = components.url else {
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = isLike ? "POST" : "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         return request
@@ -219,5 +278,4 @@ final class ImagesListService {
             )
         )
     }
-    
 }

@@ -7,6 +7,7 @@ final class ImagesListViewController: UIViewController {
     private var photos: [Photo] = []
     private let imagesListService = ImagesListService.shared
     private var imagesListServiceObserver: NSObjectProtocol?
+    private var likeStatusServiceObserver: NSObjectProtocol?
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -32,6 +33,10 @@ final class ImagesListViewController: UIViewController {
         if let observer = imagesListServiceObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+        
+        if let observer = likeStatusServiceObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
     
     // MARK: - Overrides Methods
@@ -55,6 +60,19 @@ final class ImagesListViewController: UIViewController {
             else { return }
             
             self.updateTableViewAnimated(with: newPhotos)
+        }
+        
+        likeStatusServiceObserver = NotificationCenter.default.addObserver(
+            forName: ImagesListService.didChangeLikeStatusNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard
+                let self,
+                let updatedPhoto = notification.userInfo?[ImagesListService.likedPhotoUserInfoKey] as? Photo
+            else { return }
+            
+            self.updatePhotoLikeStatus(updatedPhoto)
         }
         
         imagesListService.fetchPhotosNextPage()
@@ -91,11 +109,26 @@ final class ImagesListViewController: UIViewController {
         }
     }
     
+    private func updatePhotoLikeStatus(_ updatedPhoto: Photo) {
+        guard let index = photos.firstIndex(where: { $0.id == updatedPhoto.id }) else {
+            return
+        }
+        
+        photos[index] = updatedPhoto
+        
+        let indexPath = IndexPath(row: index, section: 0)
+        
+        if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell {
+            configCell(for: cell, with: indexPath)
+        }
+    }
+    
     private func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
         let photo = photos[indexPath.row]
         let dateText = dateFormatter.string(from: photo.createdAt)
         
-        cell.configure(with: nil, date: dateText, isLiked: photo.isLiked)
+        cell.configure(with: nil, date: dateText, isLiked: photo.isLiked, photoId: photo.id)
+        cell.delegate = self
         
         cell.loadImage(from: photo.urls.small)
     }
@@ -115,8 +148,7 @@ extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard indexPath.row < photos.count else { return }
         
-        if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell,
-           let image = cell.getImage() {
+        if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell, let image = cell.getImage() {
             showSingleImageViewController(with: image)
         }
     }
@@ -158,5 +190,17 @@ extension ImagesListViewController: UITableViewDataSource {
         
         configCell(for: imageListCell, with: indexPath)
         return imageListCell
+    }
+}
+
+// MARK: - ImagesListCellDelegate
+
+extension ImagesListViewController: ImagesListCellDelegate {
+    func imagesListCell(_ cell: ImagesListCell, didTapLikeButton photoId: String, isLiked: Bool) {
+        if let indexPath = tableView.indexPath(for: cell), indexPath.row < photos.count {
+            cell.setIsLiked(!isLiked)
+        }
+
+        imagesListService.changeLikeStatus(photoId: photoId, isLike: !isLiked)
     }
 }
