@@ -7,7 +7,6 @@ final class ImagesListViewController: UIViewController {
     private var photos: [Photo] = []
     private let imagesListService = ImagesListService.shared
     private var imagesListServiceObserver: NSObjectProtocol?
-    private var likeStatusServiceObserver: NSObjectProtocol?
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -33,10 +32,6 @@ final class ImagesListViewController: UIViewController {
         if let observer = imagesListServiceObserver {
             NotificationCenter.default.removeObserver(observer)
         }
-        
-        if let observer = likeStatusServiceObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
     }
     
     // MARK: - Overrides Methods
@@ -60,19 +55,6 @@ final class ImagesListViewController: UIViewController {
             else { return }
             
             self.updateTableViewAnimated(with: newPhotos)
-        }
-        
-        likeStatusServiceObserver = NotificationCenter.default.addObserver(
-            forName: ImagesListService.didChangeLikeStatusNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard
-                let self,
-                let updatedPhoto = notification.userInfo?[ImagesListService.likedPhotoUserInfoKey] as? Photo
-            else { return }
-            
-            self.updatePhotoLikeStatus(updatedPhoto)
         }
         
         imagesListService.fetchPhotosNextPage()
@@ -131,6 +113,19 @@ final class ImagesListViewController: UIViewController {
         cell.delegate = self
         
         cell.loadImage(from: photo.urls.small)
+    }
+    
+    private func showLikeErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось изменить статус лайка",
+            preferredStyle: .alert
+        )
+        
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alert.addAction(okAction)
+        
+        present(alert, animated: true)
     }
     
     private func showSingleImageViewController(with image: UIImage) {
@@ -197,6 +192,18 @@ extension ImagesListViewController: UITableViewDataSource {
 
 extension ImagesListViewController: ImagesListCellDelegate {
     func imagesListCell(_ cell: ImagesListCell, didTapLikeButton photoId: String, isLiked: Bool) {
-        imagesListService.changeLikeStatus(photoId: photoId, isLike: !isLiked)
+        UIBlockingProgressHUD.show()
+        
+        imagesListService.changeLikeStatus(photoId: photoId, isLike: !isLiked) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            guard let self = self else { return }
+
+            switch result {
+            case .success(let updatedPhoto):
+                self.updatePhotoLikeStatus(updatedPhoto)
+            case .failure:
+                self.showLikeErrorAlert()
+            }
+        }
     }
 }

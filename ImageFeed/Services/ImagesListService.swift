@@ -9,9 +9,6 @@ final class ImagesListService {
     static let didChangeNotification = Notification.Name("ImagesListServiceDidChange")
     static let newPhotosUserInfoKey = "newPhotos"
     
-    static let didChangeLikeStatusNotification = Notification.Name("ImagesListServiceDidChangeLikeStatus")
-    static let likedPhotoUserInfoKey = "likedPhoto"
-    
     // MARK: - Private Properties
     
     private let urlSession = URLSession.shared
@@ -123,16 +120,18 @@ final class ImagesListService {
         task.resume()
     }
     
-    func changeLikeStatus(photoId: String, isLike: Bool) {
+    func changeLikeStatus(photoId: String, isLike: Bool, completion: @escaping (Result<Photo, Error>) -> Void) {
         assert(Thread.isMainThread)
         
         guard let token = token else {
             print("[ImagesListService.changeLikeStatus] Error: No token available")
+            completion(.failure(NetworkError.invalidRequest))
             return
         }
         
         guard let request = makeLikeRequest(token: token, photoId: photoId, isLike: isLike) else {
             print("[ImagesListService.changeLikeStatus] Error: Failed to create like request")
+            completion(.failure(NetworkError.invalidRequest))
             return
         }
         
@@ -143,15 +142,14 @@ final class ImagesListService {
             switch result {
             case .success(let likeResult):
                 if let photo = self.createPhoto(from: likeResult.photo) {
-                    NotificationCenter.default.post(
-                        name: ImagesListService.didChangeLikeStatusNotification,
-                        object: self,
-                        userInfo: [ImagesListService.likedPhotoUserInfoKey: photo]
-                    )
+                    completion(.success(photo))
+                } else {
+                    completion(.failure(NetworkError.decodingError(NSError(domain: "ImagesListService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create photo from result"]))))
                 }
                 
             case .failure(let error):
                 print("[ImagesListService.changeLikeStatus]: Error - \(error.localizedDescription)")
+                completion(.failure(error))
             }
         }
         
