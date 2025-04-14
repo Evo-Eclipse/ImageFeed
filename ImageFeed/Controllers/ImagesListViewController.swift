@@ -107,7 +107,13 @@ final class ImagesListViewController: UIViewController {
     
     private func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
         let photo = photos[indexPath.row]
-        let dateText = dateFormatter.string(from: photo.createdAt)
+        let dateText: String
+        
+        if let createdAt = photo.createdAt {
+            dateText = dateFormatter.string(from: createdAt)
+        } else {
+            dateText = ""
+        }
         
         cell.configure(with: nil, date: dateText, isLiked: photo.isLiked, photoId: photo.id)
         cell.delegate = self
@@ -176,7 +182,7 @@ extension ImagesListViewController: UITableViewDelegate {
 
 extension ImagesListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return photos.count
+        photos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {

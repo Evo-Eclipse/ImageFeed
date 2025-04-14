@@ -2,7 +2,7 @@ import Foundation
 
 struct Photo {
     let id: String
-    let createdAt: Date
+    let createdAt: Date?
     let size: CGSize
     let color: String
     let isLiked: Bool

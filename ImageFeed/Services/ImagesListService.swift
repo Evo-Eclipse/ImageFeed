@@ -256,11 +256,6 @@ final class ImagesListService {
      */
     
     private func createPhoto(from result: PhotoResult) -> Photo? {
-        guard let createdAt = Photo.dateFormatter.date(from: result.createdAt) else {
-            assertionFailure("Invalid date format")
-            return nil
-        }
-        
         guard
             let smallURL = URL(string: result.urls.small),
             let regularURL = URL(string: result.urls.regular),
@@ -269,6 +264,8 @@ final class ImagesListService {
             assertionFailure("Invalid URL format")
             return nil
         }
+        
+        let createdAt = Photo.dateFormatter.date(from: result.createdAt)
         
         return Photo(
             id: result.id,
