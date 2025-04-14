@@ -52,6 +52,7 @@ final class ProfileImageService {
         
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<UserResult, Error>) in
             guard let self = self else { return }
+            print("[ProfileImageService.fetchProfileImageURL] Network: Request completed")
             
             defer {
                 self.task = nil
@@ -100,11 +101,11 @@ final class ProfileImageService {
     
     // MARK: - Private Methods
     
-    private func createProfileImage(from userResult: UserResult) -> ProfileImage {
+    private func createProfileImage(from result: UserResult) -> ProfileImage {
         return ProfileImage(
-            small: userResult.profileImage.small,
-            medium: userResult.profileImage.medium,
-            large: userResult.profileImage.large
+            small: result.profileImage.small,
+            medium: result.profileImage.medium,
+            large: result.profileImage.large
         )
     }
 }

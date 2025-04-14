@@ -103,7 +103,6 @@ final class WebViewViewController: UIViewController {
             })
     }
     
-    
     private func loadAuthPage() {
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
             assertionFailure("Invalid service URL")

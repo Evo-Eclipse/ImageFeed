@@ -1,32 +1,44 @@
 import UIKit
+import Kingfisher
 
 final class SingleImageViewController: UIViewController {
     
     // MARK: - Public Properties
     
+    var fullImageURL: URL?
+    
     var image: UIImage? {
         didSet {
             guard isViewLoaded, let image else { return }
             
+            // Reset zoom scale to default and set image
+            scrollView.zoomScale = 1.0
             imageView.image = image
-            imageView.frame.size = image.size
-            updateZoomAndCenterImage(animated: false)
+            
+            // Set image view frame to image size
+            imageView.frame = CGRect(origin: .zero, size: image.size)
+            scrollView.contentSize = image.size
+            
+            adjustImageScale(animated: false)
         }
     }
     
     // MARK: - Private Properties
+    
+    private var isFullImageLoaded = false
     
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.minimumZoomScale = 0.1
         scrollView.maximumZoomScale = 1.25
         scrollView.delegate = self
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
         return scrollView
     }()
     
     private lazy var imageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
         return imageView
     }()
     
@@ -42,7 +54,7 @@ final class SingleImageViewController: UIViewController {
         return button
     }()
     
-    // MARK: - Overrides Methods
+    // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -53,21 +65,30 @@ final class SingleImageViewController: UIViewController {
         setupConstraints()
         setupActions()
         
-        guard let image else { return }
-        imageView.image = image
-        imageView.frame.size = image.size
+        if let image = image {
+            imageView.image = image
+            imageView.frame = CGRect(origin: .zero, size: image.size)
+            scrollView.contentSize = image.size
+        }
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        if !isFullImageLoaded {
+            loadFullImage()
+        }
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        
-        updateZoomAndCenterImage(animated: false)
+        adjustImageScale(animated: false)
     }
     
     // MARK: - Actions
     
     @objc private func didTapBackButton() {
-        dismiss(animated: true, completion: nil)
+        dismiss(animated: true)
     }
     
     @objc private func didTapShareButton() {
@@ -76,7 +97,7 @@ final class SingleImageViewController: UIViewController {
             activityItems: [image],
             applicationActivities: nil
         )
-        present(share, animated: true, completion: nil)
+        present(share, animated: true)
     }
     
     // MARK: - Private Methods
@@ -115,48 +136,56 @@ final class SingleImageViewController: UIViewController {
         shareButton.addTarget(self, action: #selector(didTapShareButton), for: .touchUpInside)
     }
     
-    private func updateZoomAndCenterImage(animated: Bool) {
+    private func loadFullImage() {
+        guard let fullImageURL = fullImageURL else { return }
+        
+        UIBlockingProgressHUD.show()
+        
+        imageView.kf.setImage(
+            with: fullImageURL,
+            placeholder: imageView.image,
+            options: [.transition(.fade(0.2)), .cacheOriginalImage],
+            completionHandler: { [weak self] result in
+                UIBlockingProgressHUD.dismiss()
+                guard let self = self else { return }
+                
+                switch result {
+                case .success(let imageResult):
+                    self.isFullImageLoaded = true
+                    self.image = imageResult.image
+                case .failure:
+                    self.showErrorAlert()
+                }
+            }
+        )
+    }
+    
+    private func adjustImageScale(animated: Bool) {
         guard let image = imageView.image else { return }
         
-        let visibleRectSize = scrollView.bounds.size
+        let visibleRect = scrollView.bounds.size
         let imageSize = image.size
-        let hScale = visibleRectSize.width / imageSize.width
-        let vScale = visibleRectSize.height / imageSize.height
         
+        let hScale = visibleRect.width / imageSize.width
+        let vScale = visibleRect.height / imageSize.height
         let scale = min(scrollView.maximumZoomScale, max(scrollView.minimumZoomScale, max(hScale, vScale)))
         
         if scrollView.zoomScale != scale {
             scrollView.setZoomScale(scale, animated: animated)
         }
         
-        let contentSize = scrollView.contentSize
-        let scrollViewSize = scrollView.bounds.size
-        
-        if contentSize.width > scrollViewSize.width {
-            scrollView.contentOffset.x = (contentSize.width - scrollViewSize.width) / 2
+        if !animated {
+            updateContentInsets()
+            centerInitialContent()
         }
-        
-        if contentSize.height > scrollViewSize.height {
-            scrollView.contentOffset.y = (contentSize.height - scrollViewSize.height) / 2
-        }
-        
-        centerScrollViewContents()
     }
     
-    private func centerScrollViewContents() {
+    private func updateContentInsets() {
         let contentSize = scrollView.contentSize
-        let scrollViewSize = scrollView.bounds.size
+        let boundsSize = scrollView.bounds.size
         
-        var horizontalInset: CGFloat = 0
-        var verticalInset: CGFloat = 0
-        
-        if contentSize.width < scrollViewSize.width {
-            horizontalInset = (scrollViewSize.width - contentSize.width) / 2
-        }
-        
-        if contentSize.height < scrollViewSize.height {
-            verticalInset = (scrollViewSize.height - contentSize.height) / 2
-        }
+        let horizontalInset = max(0, (boundsSize.width - contentSize.width) / 2)
+        let verticalInset = max(0, (boundsSize.height - contentSize.height) / 2)
         
         scrollView.contentInset = UIEdgeInsets(
             top: verticalInset,
@@ -164,6 +193,36 @@ final class SingleImageViewController: UIViewController {
             bottom: verticalInset,
             right: horizontalInset
         )
+    }
+    
+    private func centerInitialContent() {
+        let contentSize = scrollView.contentSize
+        let boundsSize = scrollView.bounds.size
+        
+        if contentSize.width > boundsSize.width {
+            scrollView.contentOffset.x = (contentSize.width - boundsSize.width) / 2
+        }
+        
+        if contentSize.height > boundsSize.height {
+            scrollView.contentOffset.y = (contentSize.height - boundsSize.height) / 2
+        }
+    }
+    
+    private func showErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Попробовать ещё раз?",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+            self?.loadFullImage()
+        })
+        
+        alert.addAction(UIAlertAction(title: "Не надо", style: .default))
+        alert.preferredAction = alert.actions.last
+        
+        present(alert, animated: true)
     }
 }
 
@@ -175,6 +234,6 @@ extension SingleImageViewController: UIScrollViewDelegate {
     }
     
     func scrollViewDidZoom(_ scrollView: UIScrollView) {
-        centerScrollViewContents()
+        updateContentInsets()
     }
 }

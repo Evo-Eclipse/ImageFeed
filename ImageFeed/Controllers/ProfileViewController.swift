@@ -5,6 +5,7 @@ final class ProfileViewController: UIViewController {
     
     // MARK: - Private Properties
     
+    private let profileLogoutService = ProfileLogoutService.shared
     private let profileStorage = ProfileStorage.shared
     private let profileImageStorage = ProfileImageStorage.shared
     private var profileImageServiceObserver: NSObjectProtocol?
@@ -81,7 +82,22 @@ final class ProfileViewController: UIViewController {
     // MARK: - Actions
     
     @objc private func logoutButtonTapped() {
-        print("Logout button tapped")
+        let alert = UIAlertController(
+            title: "Пока, пока!",
+            message: "Уверены, что хотите выйти?",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Да", style: .default) { [weak self] _ in
+            guard let self else { return }
+            self.profileLogoutService.logout()
+        })
+        
+        alert.addAction(UIAlertAction(title: "Нет", style: .default))
+        
+        alert.preferredAction = alert.actions.last
+        
+        present(alert, animated: true)
     }
     
     // MARK: - Private Methods

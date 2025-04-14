@@ -79,14 +79,14 @@ final class SplashViewController: UIViewController {
         
         profileService.fetchProfile(token) { [weak self] profileResult in
             UIBlockingProgressHUD.dismiss()
-            guard let self = self else { return }
+            guard let self else { return }
             
             switch profileResult {
             case .success(let profile):
                 self.profileStorage.profile = profile
                 self.fetchProfileImage(token: token, username: profile.username)
                 
-            case .failure(_):
+            case .failure:
                 self.showProfileErrorAlert()
             }
         }
@@ -97,14 +97,14 @@ final class SplashViewController: UIViewController {
         
         profileImageService.fetchProfileImageURL(token: token, username: username) { [weak self] imageResult in
             UIBlockingProgressHUD.dismiss()
-            guard let self = self else { return }
+            guard let self else { return }
             
             switch imageResult {
             case .success(let profileImage):
                 self.profileImageStorage.profileImage = profileImage
                 self.switchToTabBarViewController()
                 
-            case .failure(_):
+            case .failure:
                 self.showProfileErrorAlert()
             }
         }
@@ -112,7 +112,8 @@ final class SplashViewController: UIViewController {
     
     private func switchToTabBarViewController() {
         guard let window = UIApplication.shared.windows.first else {
-            fatalError("Invalid configuration, no main window found")
+            assertionFailure("Invalid configuration, no main window found")
+            return
         }
         
         let tabBarViewController = TabBarViewController()
@@ -136,13 +137,11 @@ final class SplashViewController: UIViewController {
             preferredStyle: .alert
         )
         
-        let retryAction = UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
             guard let token = self?.oauth2Storage.token else { return }
             self?.fetchProfile(token: token)
-        }
-        
-        alert.addAction(retryAction)
-        
+        })
+                
         present(alert, animated: true)
     }
 }
@@ -154,14 +153,14 @@ extension SplashViewController: AuthViewControllerDelegate {
         UIBlockingProgressHUD.show()
         
         oauth2Service.fetchOAuthToken(code) { [weak self] result in
-            guard let self = self else { return }
             UIBlockingProgressHUD.dismiss()
+            guard let self else { return }
             
             switch result {
             case .success(let token):
                 self.oauth2Storage.token = token
                 self.fetchProfile(token: token)
-            case .failure(_):
+            case .failure:
                 viewController.showAuthErrorAlert()
             }
         }

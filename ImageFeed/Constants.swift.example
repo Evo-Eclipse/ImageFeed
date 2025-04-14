@@ -17,14 +17,11 @@ enum Constants {
     static let accessKey = "YOUR_ACCESS_KEY_HERE"
     
     // Your Unsplash application Secret Key
-    static var secretKey = "YOUR_SECRET_KEY_HERE"
+    static let secretKey = "YOUR_SECRET_KEY_HERE"
     
     // Your application's redirect URI
     static let redirectURI = "YOUR_REDIRECT_URI_HERE"
     
     // OAuth scope defining permissions requested from the user
     static let accessScope = "public+read_user+write_likes"
-    
-    // Base URL for Unsplash API
-    static let defaultBaseURL = URL(string: "https://api.unsplash.com")!
 }

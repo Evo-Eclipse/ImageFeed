@@ -47,6 +47,6 @@ final class ProfileImageStorage {
     
     var isExpired: Bool {
         guard let timestamp = timestamp else { return true }
-        return Date().timeIntervalSince(timestamp) > 900 // 15 minutes
+        return Date().timeIntervalSince(timestamp) > 900 // 15 Minutes
     }
 }
