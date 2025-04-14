@@ -74,7 +74,6 @@ final class SingleImageViewController: UIViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        adjustImageScale(animated: false)
         
         if !isFullImageLoaded {
             loadFullImage()

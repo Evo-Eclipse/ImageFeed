@@ -86,7 +86,7 @@ final class SplashViewController: UIViewController {
                 self.profileStorage.profile = profile
                 self.fetchProfileImage(token: token, username: profile.username)
                 
-            case .failure(_):
+            case .failure:
                 self.showProfileErrorAlert()
             }
         }
@@ -104,7 +104,7 @@ final class SplashViewController: UIViewController {
                 self.profileImageStorage.profileImage = profileImage
                 self.switchToTabBarViewController()
                 
-            case .failure(_):
+            case .failure:
                 self.showProfileErrorAlert()
             }
         }
@@ -160,7 +160,7 @@ extension SplashViewController: AuthViewControllerDelegate {
             case .success(let token):
                 self.oauth2Storage.token = token
                 self.fetchProfile(token: token)
-            case .failure(_):
+            case .failure:
                 viewController.showAuthErrorAlert()
             }
         }

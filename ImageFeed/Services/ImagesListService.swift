@@ -25,11 +25,11 @@ final class ImagesListService {
     private let minItemsPerPage = 10
     private let maxItemsPerPage = 100 // API Maximum seems to be 30
     private let sensitivityFactor = 5.0
-    
-    //    private var averageRequestDuration: TimeInterval = 0
-    //    private let smoothingFactor: Double = 0.2
-    //    private var requestCount: Int = 0
-    
+    /*
+     private var averageRequestDuration: TimeInterval = 0
+     private let smoothingFactor: Double = 0.2
+     private var requestCount: Int = 0
+     */
     // MARK: - Structures
     
     struct PhotoResult: Decodable {

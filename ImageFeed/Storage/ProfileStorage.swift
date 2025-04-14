@@ -46,9 +46,7 @@ final class ProfileStorage {
     }
     
     var isExpired: Bool {
-        get {
-            guard let timestamp = timestamp else { return true }
-            return Date().timeIntervalSince(timestamp) > 900 // 15 minutes
-        }
+        guard let timestamp = timestamp else { return true }
+        return Date().timeIntervalSince(timestamp) > 900 // 15 Minutes
     }
 }
