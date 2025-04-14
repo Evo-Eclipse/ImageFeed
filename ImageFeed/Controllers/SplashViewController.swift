@@ -112,7 +112,8 @@ final class SplashViewController: UIViewController {
     
     private func switchToTabBarViewController() {
         guard let window = UIApplication.shared.windows.first else {
-            fatalError("Invalid configuration, no main window found")
+            assertionFailure("Invalid configuration, no main window found")
+            return
         }
         
         let tabBarViewController = TabBarViewController()
@@ -136,13 +137,11 @@ final class SplashViewController: UIViewController {
             preferredStyle: .alert
         )
         
-        let retryAction = UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
             guard let token = self?.oauth2Storage.token else { return }
             self?.fetchProfile(token: token)
-        }
-        
-        alert.addAction(retryAction)
-        
+        })
+                
         present(alert, animated: true)
     }
 }

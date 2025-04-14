@@ -221,7 +221,7 @@ final class SingleImageViewController: UIViewController {
         })
         
         alert.addAction(UIAlertAction(title: "Не надо", style: .default))
-        alert.preferredAction = alert.actions.first
+        alert.preferredAction = alert.actions.last
         
         present(alert, animated: true)
     }

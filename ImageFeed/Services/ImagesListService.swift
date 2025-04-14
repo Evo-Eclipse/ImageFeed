@@ -156,6 +156,14 @@ final class ImagesListService {
         likeTask.resume()
     }
     
+    func reset() {
+        task?.cancel()
+        task = nil
+        lastLoadedPage = 0
+        itemsPerPage = 10
+        requestDurations.removeAll()
+    }
+    
     // MARK: - Network Methods
     
     private func makePhotoRequest(token: String, page: Int, perPage: Int) -> URLRequest? {
