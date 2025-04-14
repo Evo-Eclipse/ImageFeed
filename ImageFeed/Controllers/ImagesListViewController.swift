@@ -128,9 +128,10 @@ final class ImagesListViewController: UIViewController {
         present(alert, animated: true)
     }
     
-    private func showSingleImageViewController(with image: UIImage) {
+    private func showSingleImageViewController(with image: UIImage, fullImageURL: URL) {
         let viewController = SingleImageViewController()
         viewController.image = image
+        viewController.fullImageURL = fullImageURL
         viewController.modalPresentationStyle = .fullScreen
         viewController.modalTransitionStyle = .crossDissolve
         present(viewController, animated: true)
@@ -143,8 +144,10 @@ extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard indexPath.row < photos.count else { return }
         
+        let photo = photos[indexPath.row]
+        
         if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell, let image = cell.getImage() {
-            showSingleImageViewController(with: image)
+            showSingleImageViewController(with: image, fullImageURL: photo.urls.full)
         }
     }
     

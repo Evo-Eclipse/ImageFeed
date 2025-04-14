@@ -79,7 +79,7 @@ final class SplashViewController: UIViewController {
         
         profileService.fetchProfile(token) { [weak self] profileResult in
             UIBlockingProgressHUD.dismiss()
-            guard let self = self else { return }
+            guard let self else { return }
             
             switch profileResult {
             case .success(let profile):
@@ -97,7 +97,7 @@ final class SplashViewController: UIViewController {
         
         profileImageService.fetchProfileImageURL(token: token, username: username) { [weak self] imageResult in
             UIBlockingProgressHUD.dismiss()
-            guard let self = self else { return }
+            guard let self else { return }
             
             switch imageResult {
             case .success(let profileImage):
@@ -154,8 +154,8 @@ extension SplashViewController: AuthViewControllerDelegate {
         UIBlockingProgressHUD.show()
         
         oauth2Service.fetchOAuthToken(code) { [weak self] result in
-            guard let self = self else { return }
             UIBlockingProgressHUD.dismiss()
+            guard let self else { return }
             
             switch result {
             case .success(let token):
