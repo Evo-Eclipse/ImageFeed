@@ -1,8 +1,11 @@
 import XCTest
 @testable import ImageFeed
 
+/// Tests for WebView functionality including presenter, view controller and auth helper
 final class WebViewTests: XCTestCase {
     
+    /// Tests that view controller calls presenter's viewDidLoad method
+    /// - Verifies the connection between view controller and presenter
     func testViewControllerCallsViewDidLoad() {
         // Given
         let controller = WebViewViewController()
@@ -18,6 +21,8 @@ final class WebViewTests: XCTestCase {
         XCTAssertTrue(presenter.viewDidLoadCalled)
     }
     
+    /// Tests that presenter calls loadRequest on its view
+    /// - Verifies the presenter properly interacts with the view
     func testPresenterCallsLoadRequest() {
         // Given
         let controller = WebViewViewControllerSpy()
@@ -34,6 +39,8 @@ final class WebViewTests: XCTestCase {
         XCTAssertTrue(controller.loadRequestCalled)
     }
     
+    /// Tests that progress indicator is visible when progress value is less than 1.0
+    /// - Verifies correct progress visibility logic
     func testProgressVisibleWhenLessThenOne() {
         // Given
         let authHelper = AuthHelper()
@@ -47,6 +54,8 @@ final class WebViewTests: XCTestCase {
         XCTAssertFalse(shouldHideProgress)
     }
     
+    /// Tests that progress indicator is hidden when progress value is exactly 1.0
+    /// - Verifies correct progress visibility logic
     func testProgressHiddenWhenOne() {
         // Given
         let authHelper = AuthHelper()
@@ -60,6 +69,8 @@ final class WebViewTests: XCTestCase {
         XCTAssertTrue(shouldHideProgress)
     }
     
+    /// Tests that AuthHelper correctly constructs the OAuth URL with all required parameters
+    /// - Verifies authentication request formation
     func testAuthHelperAuthURL() {
         // Given
         let configuration = AuthConfiguration.standard
@@ -82,6 +93,8 @@ final class WebViewTests: XCTestCase {
         XCTAssertTrue(urlString.contains(configuration.accessScope))
     }
     
+    /// Tests extraction of authorization code from callback URL
+    /// - Verifies the correct parsing of OAuth callback
     func testCodeFromURL() {
         // Given
         let configuration = AuthConfiguration.standard
@@ -104,9 +117,9 @@ final class WebViewTests: XCTestCase {
         // Then
         XCTAssertEqual(code, "test code")
     }
-    
 }
 
+/// Test spy for WebViewPresenter to verify interactions
 final class WebViewPresenterSpy: WebViewPresenterProtocol {
     var viewDidLoadCalled: Bool = false
     var view: WebViewViewControllerProtocol?
@@ -124,6 +137,7 @@ final class WebViewPresenterSpy: WebViewPresenterProtocol {
     }
 }
 
+/// Test spy for WebViewController to verify interactions
 final class WebViewViewControllerSpy: WebViewViewControllerProtocol {
     var loadRequestCalled: Bool = false
     var presenter: WebViewPresenterProtocol?

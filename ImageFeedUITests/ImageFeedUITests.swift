@@ -1,5 +1,6 @@
 import XCTest
 
+/// UI tests for the ImageFeed application
 final class ImageFeedUITests: XCTestCase {
     private let app = XCUIApplication()
     
@@ -8,6 +9,9 @@ final class ImageFeedUITests: XCTestCase {
         app.launch()
     }
     
+    /// Tests the authentication flow
+    /// - Verifies login process through Unsplash web authentication
+    /// - Checks successful transition to feed after authentication
     func testAuth() throws {
         let userEmail = "YOUR_UNSPLASH_TEST_EMAIL_HERE"
         let userPassword = "YOUR_UNSPLASH_TEST_PASSWORD_HERE"
@@ -23,6 +27,7 @@ final class ImageFeedUITests: XCTestCase {
         XCTAssertTrue(emailTextField.waitForExistence(timeout: 5))
         emailTextField.tap()
         emailTextField.typeText(userEmail)
+        sleep(1)
         
         app.toolbars["Toolbar"].buttons["Next"].tap()
         sleep(2)
@@ -31,6 +36,7 @@ final class ImageFeedUITests: XCTestCase {
         XCTAssertTrue(passwordTextField.waitForExistence(timeout: 5))
         passwordTextField.tap()
         passwordTextField.typeText(userPassword)
+        sleep(1)
         
         app.toolbars["Toolbar"].buttons["Done"].tap()
         sleep(2)
@@ -46,6 +52,10 @@ final class ImageFeedUITests: XCTestCase {
         XCTAssertTrue(firstCell.waitForExistence(timeout: 10))
     }
     
+    /// Tests the feed functionality
+    /// - Verifies scrolling in the feed
+    /// - Tests like/unlike functionality
+    /// - Checks image detail view with zoom capabilities
     func testFeed() throws {
         let tablesQuery = app.tables
         XCTAssertTrue(tablesQuery.firstMatch.waitForExistence(timeout: 10))
@@ -57,34 +67,28 @@ final class ImageFeedUITests: XCTestCase {
         sleep(2)
         
         let cellToLike = tablesQuery.cells.element(boundBy: 1)
-        print("[Breakpoint 1] cellToLike: \(cellToLike)")
         XCTAssertTrue(cellToLike.exists)
         
         let likeButton = cellToLike.buttons["Like"]
-        print("[Breakpoint 2] cellToLike: \(cellToLike)")
         XCTAssertTrue(likeButton.waitForExistence(timeout: 5))
-        print("[Breakpoint 3] cellToLike: \(cellToLike)")
         likeButton.tap()
-        sleep(2)
+        sleep(4)
         
         let unlikeButton = cellToLike.buttons["Unlike"]
-        print("[Breakpoint 4] cellToLike: \(cellToLike)")
         XCTAssertTrue(unlikeButton.waitForExistence(timeout: 5))
-        print("[Breakpoint 5] cellToLike: \(cellToLike)")
         unlikeButton.tap()
-        sleep(2)
+        sleep(4)
         
-        print("[Breakpoint 6] cellToLike: \(cellToLike)")
         cellToLike.tap()
         
         let fullScreenImage = app.scrollViews["ImageView"].images["FullImage"]
         XCTAssertTrue(fullScreenImage.waitForExistence(timeout: 10))
         
         fullScreenImage.pinch(withScale: 3.0, velocity: 1.0)
-        sleep(2)
+        sleep(1)
         
         fullScreenImage.pinch(withScale: 0.5, velocity: -1.0)
-        sleep(2)
+        sleep(1)
         
         let backButton = app.buttons["Back"]
         XCTAssertTrue(backButton.exists)
@@ -93,6 +97,9 @@ final class ImageFeedUITests: XCTestCase {
         XCTAssertTrue(tablesQuery.firstMatch.waitForExistence(timeout: 5))
     }
     
+    /// Tests the profile functionality
+    /// - Verifies profile information display
+    /// - Tests logout functionality
     func testProfile() throws {
         let profileTab = app.tabBars.buttons["Profile"]
         XCTAssertTrue(profileTab.exists)
