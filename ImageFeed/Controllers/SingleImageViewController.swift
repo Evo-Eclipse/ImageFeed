@@ -110,6 +110,10 @@ final class SingleImageViewController: UIViewController {
         
         imageView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(imageView)
+        
+        backButton.accessibilityIdentifier = "Back"
+        scrollView.accessibilityIdentifier = "ImageView"
+        imageView.accessibilityIdentifier = "FullImage"
     }
     
     private func setupConstraints() {

@@ -107,6 +107,10 @@ final class ProfileViewController: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
+        
+        profileName.accessibilityIdentifier = "Name"
+        profileLogin.accessibilityIdentifier = "Username"
+        logoutButton.accessibilityIdentifier = "Logout"
     }
     
     private func setupConstraints() {

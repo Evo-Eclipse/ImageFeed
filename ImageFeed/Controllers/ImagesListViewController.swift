@@ -7,6 +7,7 @@ final class ImagesListViewController: UIViewController {
     private var photos: [Photo] = []
     private let imagesListService = ImagesListService.shared
     private var imagesListServiceObserver: NSObjectProtocol?
+    private var imagesListServiceErrorObserver: NSObjectProtocol?
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -32,6 +33,9 @@ final class ImagesListViewController: UIViewController {
         if let observer = imagesListServiceObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+        if let errorObserver = imagesListServiceErrorObserver {
+            NotificationCenter.default.removeObserver(errorObserver)
+        }
     }
     
     // MARK: - Overrides Methods
@@ -55,6 +59,16 @@ final class ImagesListViewController: UIViewController {
             else { return }
             
             self.updateTableViewAnimated(with: newPhotos)
+        }
+        
+        imagesListServiceErrorObserver = NotificationCenter.default.addObserver(
+            forName: ImagesListService.didFailToLoadPhotosNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            
+            self.showPhotosLoadErrorAlert()
         }
         
         imagesListService.fetchPhotosNextPage()
@@ -121,15 +135,24 @@ final class ImagesListViewController: UIViewController {
         cell.loadImage(from: photo.urls.small)
     }
     
+    private func showPhotosLoadErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось загрузить фотографии",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        
+        present(alert, animated: true)
+    }
+    
     private func showLikeErrorAlert() {
         let alert = UIAlertController(
             title: "Что-то пошло не так(",
             message: "Не удалось изменить статус лайка",
             preferredStyle: .alert
         )
-        
-        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
-        alert.addAction(okAction)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         
         present(alert, animated: true)
     }
@@ -206,7 +229,7 @@ extension ImagesListViewController: ImagesListCellDelegate {
         imagesListService.changeLikeStatus(photoId: photoId, isLike: !isLiked) { [weak self] result in
             UIBlockingProgressHUD.dismiss()
             guard let self = self else { return }
-
+            
             switch result {
             case .success(let updatedPhoto):
                 self.updatePhotoLikeStatus(updatedPhoto)

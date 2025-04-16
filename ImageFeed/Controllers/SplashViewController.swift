@@ -141,7 +141,7 @@ final class SplashViewController: UIViewController {
             guard let token = self?.oauth2Storage.token else { return }
             self?.fetchProfile(token: token)
         })
-                
+        
         present(alert, animated: true)
     }
 }

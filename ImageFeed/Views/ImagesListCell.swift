@@ -72,6 +72,13 @@ final class ImagesListCell: UITableViewCell {
         photoId = nil
     }
     
+    // MARK: - Actions
+    
+    @objc private func likeButtonTapped() {
+        guard let photoId = photoId else { return }
+        delegate?.imagesListCell(self, didTapLikeButton: photoId, isLiked: isLiked)
+    }
+    
     // MARK: - Public Methods
     
     func configure(with image: UIImage?, date: String, isLiked: Bool, photoId: String) {
@@ -122,13 +129,6 @@ final class ImagesListCell: UITableViewCell {
         updateLikeButtonImage()
     }
     
-    // MARK: - Actions
-    
-    @objc private func likeButtonTapped() {
-        guard let photoId = photoId else { return }
-        delegate?.imagesListCell(self, didTapLikeButton: photoId, isLiked: isLiked)
-    }
-    
     // MARK: - Private Methods
     
     private func setupViews() {
@@ -139,6 +139,7 @@ final class ImagesListCell: UITableViewCell {
             $0.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview($0)
         }
+        // likeButton.accessibilityIdentifier = "Like" For some reason this is not working
     }
     
     private func setupConstraints() {
@@ -166,6 +167,7 @@ final class ImagesListCell: UITableViewCell {
     
     private func updateLikeButtonImage() {
         let likeImage = isLiked ? UIImage(named: "button.like.active") : UIImage(named: "button.like.inactive")
+        likeButton.accessibilityIdentifier = isLiked ? "Unlike" : "Like"
         likeButton.setImage(likeImage, for: .normal)
     }
 }

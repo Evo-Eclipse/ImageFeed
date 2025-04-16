@@ -59,6 +59,9 @@ final class WebViewViewController: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
+        
+        webView.accessibilityIdentifier = "UnsplashWebView"
+        progressView.accessibilityIdentifier = "Progress"
     }
     
     private func setupConstraints() {
