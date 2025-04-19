@@ -6,7 +6,7 @@ final class TabBarViewController: UITabBarController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         setupTabBar()
         setupViewControllers()
     }
@@ -36,6 +36,7 @@ final class TabBarViewController: UITabBarController {
             image: UIImage(named: "tab.editorial.active"),
             tag: 0
         )
+        imagesListViewController.tabBarItem.accessibilityIdentifier = "Feed"
         
         let profileViewController = ProfileViewController()
         profileViewController.tabBarItem = UITabBarItem(
@@ -43,6 +44,7 @@ final class TabBarViewController: UITabBarController {
             image: UIImage(named: "tab.profile.active"),
             tag: 1
         )
+        profileViewController.tabBarItem.accessibilityIdentifier = "Profile"
         
         self.viewControllers = [imagesListViewController, profileViewController]
     }

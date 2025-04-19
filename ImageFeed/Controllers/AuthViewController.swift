@@ -24,7 +24,6 @@ final class AuthViewController: UIViewController {
         button.setTitle("Войти", for: .normal)
         button.setTitleColor(.ypBlack, for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .bold)
-        
         button.backgroundColor = .ypWhite
         button.layer.cornerRadius = 16
         return button
@@ -48,6 +47,13 @@ final class AuthViewController: UIViewController {
     @objc private func didTapLoginButton() {
         let webViewViewController = WebViewViewController()
         webViewViewController.delegate = self
+        
+        let authHelper = AuthHelper()
+        let presenter = WebViewPresenter(authHelper: authHelper)
+        
+        presenter.view = webViewViewController
+        webViewViewController.presenter = presenter
+        
         navigationController?.pushViewController(webViewViewController, animated: true)
     }
     
@@ -73,6 +79,8 @@ final class AuthViewController: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
+        
+        loginButton.accessibilityIdentifier = "Login"
     }
     
     private func setupConstraints() {

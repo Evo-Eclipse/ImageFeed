@@ -8,6 +8,8 @@ final class ImagesListService {
     
     static let didChangeNotification = Notification.Name("ImagesListServiceDidChange")
     static let newPhotosUserInfoKey = "newPhotos"
+    static let didFailToLoadPhotosNotification = Notification.Name("ImagesListServiceFailedToLoad")
+    static let errorUserInfoKey = "error"
     
     // MARK: - Private Properties
     
