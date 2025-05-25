@@ -13,7 +13,7 @@ final class SplashViewController: UIViewController {
     
     private lazy var logoImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "logo.launch.screen")
+        imageView.image = UIImage(named: "logo.splash")
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()

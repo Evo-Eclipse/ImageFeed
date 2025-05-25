@@ -14,7 +14,7 @@ final class AuthViewController: UIViewController {
     
     private lazy var logoImage: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "logo.auth.screen")
+        imageView.image = UIImage(named: "logo.auth")
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()

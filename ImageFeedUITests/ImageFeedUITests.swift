@@ -63,7 +63,10 @@ final class ImageFeedUITests: XCTestCase {
         let cell = tablesQuery.cells.element(boundBy: 0)
         XCTAssertTrue(cell.waitForExistence(timeout: 5))
         
-        cell.swipeUp()
+        tablesQuery.element.swipeUp()
+        sleep(2)
+        
+        tablesQuery.element.swipeDown()
         sleep(2)
         
         let cellToLike = tablesQuery.cells.element(boundBy: 1)
