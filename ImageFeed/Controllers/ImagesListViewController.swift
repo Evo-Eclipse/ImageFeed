@@ -96,12 +96,16 @@ final class ImagesListViewController: UIViewController {
         
         guard newCount > 0 else { return }
         
-        photos.append(contentsOf: newPhotos)
-        
-        let indexPaths = (startIndex..<(startIndex + newCount)).map { IndexPath(row: $0, section: 0) }
-        
-        tableView.performBatchUpdates {
-            tableView.insertRows(at: indexPaths, with: .automatic)
+        if photos.isEmpty {
+            photos = newPhotos
+            tableView.reloadData()
+        } else {
+            let indexPaths = (startIndex..<(startIndex + newCount)).map { IndexPath(row: $0, section: 0) }
+            
+            tableView.performBatchUpdates {
+                photos.append(contentsOf: newPhotos)
+                tableView.insertRows(at: indexPaths, with: .automatic)
+            }
         }
     }
     

@@ -11,6 +11,7 @@ final class ProfileLogoutService {
         
         cleanStorages()
         cleanImages()
+        cleanPhotoCache()
         cleanCookies()
         
         switchToSplashViewController()
@@ -26,6 +27,10 @@ final class ProfileLogoutService {
     
     private func cleanImages() {
         ImagesListService.shared.reset()
+    }
+    
+    private func cleanPhotoCache() {
+        PhotoCacheService.shared.clearCache()
     }
     
     private func cleanCookies() {

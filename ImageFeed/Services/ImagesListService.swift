@@ -14,24 +14,14 @@ final class ImagesListService {
     // MARK: - Private Properties
     
     private let urlSession = URLSession.shared
+    private let photoCacheService = PhotoCacheService.shared
     private var task: URLSessionTask?
     private var lastLoadedPage = 0
     private let token = OAuth2Storage.shared.token
     
-    // Adaptive pagination parameters
+    private let itemsPerPage = 20
+    private var isInitialLoadCompleted = false
     
-    private var itemsPerPage = 10
-    private var requestDurations: [TimeInterval] = []
-    private let requestHistoryLimit = 5
-    private let targetRequestDuration: TimeInterval = 0.5
-    private let minItemsPerPage = 10
-    private let maxItemsPerPage = 100 // API Maximum seems to be 30
-    private let sensitivityFactor = 5.0
-    /*
-     private var averageRequestDuration: TimeInterval = 0
-     private let smoothingFactor: Double = 0.2
-     private var requestCount: Int = 0
-     */
     // MARK: - Structures
     
     struct PhotoResult: Decodable {
@@ -77,49 +67,11 @@ final class ImagesListService {
         
         guard task == nil else { return }
         
-        guard let token else {
-            print("[ImagesListService.fetchPhotosNextPage] Error: No token available")
-            return
+        if !isInitialLoadCompleted {
+            performInitialLoad()
+        } else {
+            loadNextPage()
         }
-        
-        let nextPage = lastLoadedPage + 1
-        let startTime = Date()
-        
-        guard let request = makePhotoRequest(token: token, page: nextPage, perPage: itemsPerPage) else {
-            print("[ImagesListService.fetchPhotosNextPage] Error: Failed to create photo request")
-            return
-        }
-        
-        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<[PhotoResult], Error>) in
-            guard let self = self else { return }
-            print("[ImagesListService.fetchPhotosNextPage] Network: Request completed")
-            
-            let requestDuration = Date().timeIntervalSince(startTime)
-            self.adaptRequestSize(requestDuration: requestDuration)
-            
-            defer {
-                self.task = nil
-            }
-            
-            switch result {
-            case .success(let photoResults):
-                let newPhotos = photoResults.compactMap { self.createPhoto(from: $0) }
-                
-                self.lastLoadedPage = nextPage
-                
-                NotificationCenter.default.post(
-                    name: ImagesListService.didChangeNotification,
-                    object: self,
-                    userInfo: [ImagesListService.newPhotosUserInfoKey: newPhotos]
-                )
-                
-            case .failure(let error):
-                print("[ImagesListService.fetchPhotosNextPage]: Error - \(error.localizedDescription)")
-            }
-        }
-        
-        self.task = task
-        task.resume()
     }
     
     func changeLikeStatus(photoId: String, isLike: Bool, completion: @escaping (Result<Photo, Error>) -> Void) {
@@ -144,9 +96,10 @@ final class ImagesListService {
             switch result {
             case .success(let likeResult):
                 if let photo = self.createPhoto(from: likeResult.photo) {
+                    self.photoCacheService.updatePhotoLikeStatus(photoId: photoId, isLiked: photo.isLiked)
                     completion(.success(photo))
                 } else {
-                    completion(.failure(NetworkError.decodingError(NSError(domain: "ImagesListService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create photo from result"]))))
+                    completion(.failure(NetworkError.decodingError(NSError(domain: "ImagesListService", code: -1))))
                 }
                 
             case .failure(let error):
@@ -162,8 +115,197 @@ final class ImagesListService {
         task?.cancel()
         task = nil
         lastLoadedPage = 0
-        itemsPerPage = 10
-        requestDurations.removeAll()
+        isInitialLoadCompleted = false
+    }
+    
+    func clearCache() {
+        photoCacheService.clearCache()
+        reset()
+    }
+    
+    // MARK: - Private Methods
+    
+    private func performInitialLoad() {
+        if photoCacheService.needsCacheRefresh() {
+            print("[ImagesListService] Cache needs refresh, checking for new photos")
+            checkForNewPhotosAndUpdate()
+        } else {
+            print("[ImagesListService] Cache is valid, loading from cache")
+            loadFromCache()
+        }
+    }
+    
+    private func loadFromCache() {
+        let cachedPhotos = photoCacheService.fetchAllCachedPhotos()
+        
+        if !cachedPhotos.isEmpty {
+            let totalCached = photoCacheService.getCachedPhotosCount()
+            lastLoadedPage = (totalCached - 1) / itemsPerPage + 1
+            isInitialLoadCompleted = true
+            
+            NotificationCenter.default.post(
+                name: ImagesListService.didChangeNotification,
+                object: self,
+                userInfo: [ImagesListService.newPhotosUserInfoKey: cachedPhotos]
+            )
+        } else {
+            checkForNewPhotosAndUpdate()
+        }
+    }
+    
+    private func checkForNewPhotosAndUpdate() {
+        guard let token = token else {
+            print("[ImagesListService.checkForNewPhotosAndUpdate] Error: No token available")
+            postFailureNotification()
+            return
+        }
+        
+        guard let request = makePhotoRequest(token: token, page: 1, perPage: itemsPerPage) else {
+            print("[ImagesListService.checkForNewPhotosAndUpdate] Error: Failed to create photo request")
+            postFailureNotification()
+            return
+        }
+        
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<[PhotoResult], Error>) in
+            guard let self = self else { return }
+            print("[ImagesListService.checkForNewPhotosAndUpdate] Network: Request completed for page 1")
+            
+            defer {
+                self.task = nil
+            }
+            
+            switch result {
+            case .success(let photoResults):
+                let newFirstPagePhotos = photoResults.compactMap { self.createPhoto(from: $0) }
+                self.handleFirstPagePhotos(newFirstPagePhotos)
+                
+            case .failure(let error):
+                print("[ImagesListService.checkForNewPhotosAndUpdate]: Error - \(error.localizedDescription)")
+                self.postFailureNotification()
+            }
+        }
+        
+        self.task = task
+        task.resume()
+    }
+    
+    private func handleFirstPagePhotos(_ newFirstPagePhotos: [Photo]) {
+        let cachedPhotos = photoCacheService.fetchAllCachedPhotos()
+        
+        if cachedPhotos.isEmpty {
+            print("[ImagesListService] No cache, saving first page")
+            photoCacheService.savePhotos(newFirstPagePhotos, startingFromPosition: 0)
+            lastLoadedPage = 1
+            isInitialLoadCompleted = true
+            
+            NotificationCenter.default.post(
+                name: ImagesListService.didChangeNotification,
+                object: self,
+                userInfo: [ImagesListService.newPhotosUserInfoKey: newFirstPagePhotos]
+            )
+            return
+        }
+        
+        let cachedPhotoIds = Set(cachedPhotos.map { $0.id })
+        let newPhotosList = newFirstPagePhotos.filter { !cachedPhotoIds.contains($0.id) }
+        
+        if newPhotosList.isEmpty {
+            print("[ImagesListService] No new photos detected, using cache")
+            lastLoadedPage = (cachedPhotos.count - 1) / itemsPerPage + 1
+            isInitialLoadCompleted = true
+            
+            NotificationCenter.default.post(
+                name: ImagesListService.didChangeNotification,
+                object: self,
+                userInfo: [ImagesListService.newPhotosUserInfoKey: cachedPhotos]
+            )
+        } else {
+            print("[ImagesListService] Found \(newPhotosList.count) new photos, updating cache")
+            
+            let newPhotosCount = newPhotosList.count
+            
+            photoCacheService.shiftCachedPhotosPositions(by: newPhotosCount)
+            photoCacheService.savePhotos(newPhotosList, startingFromPosition: 0)
+            
+            let updatedCachedPhotos = photoCacheService.fetchAllCachedPhotos()
+            
+            lastLoadedPage = (updatedCachedPhotos.count - 1) / itemsPerPage + 1
+            isInitialLoadCompleted = true
+            
+            NotificationCenter.default.post(
+                name: ImagesListService.didChangeNotification,
+                object: self,
+                userInfo: [ImagesListService.newPhotosUserInfoKey: updatedCachedPhotos]
+            )
+        }
+    }
+    
+    private func loadNextPage() {
+        guard let token = token else {
+            print("[ImagesListService.loadNextPage] Error: No token available")
+            postFailureNotification()
+            return
+        }
+        
+        let nextPage = lastLoadedPage + 1
+        let startPosition = (nextPage - 1) * itemsPerPage
+        
+        let cachedPagePhotos = photoCacheService.getCachedPhotos(from: startPosition, count: itemsPerPage)
+        if !cachedPagePhotos.isEmpty {
+            lastLoadedPage = nextPage
+            
+            NotificationCenter.default.post(
+                name: ImagesListService.didChangeNotification,
+                object: self,
+                userInfo: [ImagesListService.newPhotosUserInfoKey: cachedPagePhotos]
+            )
+            return
+        }
+        
+        guard let request = makePhotoRequest(token: token, page: nextPage, perPage: itemsPerPage) else {
+            print("[ImagesListService.loadNextPage] Error: Failed to create photo request")
+            postFailureNotification()
+            return
+        }
+        
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<[PhotoResult], Error>) in
+            guard let self = self else { return }
+            print("[ImagesListService.loadNextPage] Network: Request completed for page \(nextPage)")
+            
+            defer {
+                self.task = nil
+            }
+            
+            switch result {
+            case .success(let photoResults):
+                let newPhotos = photoResults.compactMap { self.createPhoto(from: $0) }
+                
+                self.photoCacheService.savePhotos(newPhotos, startingFromPosition: startPosition)
+                
+                self.lastLoadedPage = nextPage
+                
+                NotificationCenter.default.post(
+                    name: ImagesListService.didChangeNotification,
+                    object: self,
+                    userInfo: [ImagesListService.newPhotosUserInfoKey: newPhotos]
+                )
+                
+            case .failure(let error):
+                print("[ImagesListService.loadNextPage]: Error - \(error.localizedDescription)")
+                self.postFailureNotification()
+            }
+        }
+        
+        self.task = task
+        task.resume()
+    }
+    
+    private func postFailureNotification() {
+        NotificationCenter.default.post(
+            name: ImagesListService.didFailToLoadPhotosNotification,
+            object: self,
+            userInfo: [ImagesListService.errorUserInfoKey: "Failed to load photos"]
+        )
     }
     
     // MARK: - Network Methods
@@ -206,56 +348,6 @@ final class ImagesListService {
         
         return request
     }
-    
-    // MARK: - Private Methods
-    
-    private func adaptRequestSize(requestDuration: TimeInterval) {
-        if requestDurations.count >= requestHistoryLimit {
-            requestDurations.removeFirst()
-        }
-        requestDurations.append(requestDuration)
-        
-        guard !requestDurations.isEmpty else { return }
-        
-        let averageDuration = requestDurations.reduce(0, +) / Double(requestDurations.count)
-        let deviationRatio = targetRequestDuration / averageDuration
-        
-        let adjustmentFactor = sqrt(abs(deviationRatio)) * sensitivityFactor
-        
-        if deviationRatio > 1.0 {
-            itemsPerPage = min(maxItemsPerPage, Int(Double(itemsPerPage) * adjustmentFactor))
-            print("[ImagesListService] Increasing per_page to \(itemsPerPage) due to fast requests (avg \(averageDuration)s)")
-        } else {
-            itemsPerPage = max(minItemsPerPage, Int(Double(itemsPerPage) / adjustmentFactor))
-            print("[ImagesListService] Decreasing per_page to \(itemsPerPage) due to slow requests (avg \(averageDuration)s)")
-        }
-    }
-    
-    /*
-     private func adaptRequestSize(requestDuration: TimeInterval) {
-     requestCount += 1
-     if requestCount == 1 {
-     averageRequestDuration = requestDuration
-     return
-     }
-     
-     // newAvg = α × currentValue + (1 - α) × previousAvg
-     averageRequestDuration = smoothingFactor * requestDuration + (1 - smoothingFactor) * averageRequestDuration
-     
-     let deviationRatio = targetRequestDuration / averageRequestDuration
-     let adjustmentFactor = sqrt(abs(deviationRatio)) * sensitivityFactor
-     let previousItemsPerPage = itemsPerPage
-     
-     if deviationRatio > 1.0 {
-     itemsPerPage = min(maxItemsPerPage, Int(Double(itemsPerPage) * adjustmentFactor))
-     print("[ImagesListService] Decreasing per_page to \(itemsPerPage) due to slow requests (avg \(averageDuration)s)")
-     }
-     } else {
-     itemsPerPage = max(minItemsPerPage, Int(Double(itemsPerPage) / adjustmentFactor))
-     print("[ImagesListService] Increasing per_page to \(itemsPerPage) due to fast requests (avg \(averageDuration)s)")
-     }
-     }
-     */
     
     private func createPhoto(from result: PhotoResult) -> Photo? {
         guard

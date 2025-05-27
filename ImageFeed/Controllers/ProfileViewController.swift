@@ -12,7 +12,7 @@ final class ProfileViewController: UIViewController {
     
     private lazy var profileImage: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "icon.user")
+        imageView.image = UIImage(named: "profile.placeholder")
         imageView.contentMode = .scaleAspectFill
         imageView.layer.cornerRadius = 35
         imageView.clipsToBounds = true
@@ -162,7 +162,7 @@ final class ProfileViewController: UIViewController {
         self.profileImage.kf.indicatorType = .activity
         self.profileImage.kf.setImage(
             with: url,
-            placeholder: UIImage(named: "icon.user"),
+            placeholder: UIImage(named: "profile.placeholder"),
             options: [
                 .transition(.fade(0.2)),
                 .cacheOriginalImage
